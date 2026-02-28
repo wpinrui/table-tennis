@@ -19,7 +19,7 @@
 import type { Vec3 } from "../types/index.js";
 import type { Rng } from "../rng.js";
 import type { PlayerEngineConfig } from "./constants.js";
-import { clamp } from "../physics/vec-math.js";
+import { clamp, v3mag, v3sub } from "../physics/vec-math.js";
 
 /**
  * Compute how difficult the incoming spin is to read.
@@ -95,11 +95,7 @@ export function computePerceivedSpin(
   rng: Rng,
   config: PlayerEngineConfig,
 ): { perceivedSpin: Vec3; misread: number } {
-  const spinMag = Math.sqrt(
-    actualSpin.x * actualSpin.x +
-      actualSpin.y * actualSpin.y +
-      actualSpin.z * actualSpin.z,
-  );
+  const spinMag = v3mag(actualSpin);
 
   // No spin → nothing to misread
   if (spinMag < config.spinMisreadEpsilon) {
@@ -116,10 +112,7 @@ export function computePerceivedSpin(
   };
 
   // Normalised misread: euclidean distance / spin magnitude, capped at 1
-  const dx = perceivedSpin.x - actualSpin.x;
-  const dy = perceivedSpin.y - actualSpin.y;
-  const dz = perceivedSpin.z - actualSpin.z;
-  const errorMag = Math.sqrt(dx * dx + dy * dy + dz * dz);
+  const errorMag = v3mag(v3sub(perceivedSpin, actualSpin));
 
   return {
     perceivedSpin,
