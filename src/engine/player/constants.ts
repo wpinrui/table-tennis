@@ -70,6 +70,14 @@ export interface PlayerEngineConfig {
   maxServeNetClearance: number;
   /** Serve width range as fraction of table half-width. */
   serveWidthRange: number;
+
+  // --- Deception ---
+  /** Base deception scale — how much of the deception attribute is used at zero risk. */
+  deceptionBaseScale: number;
+  /** Additional deception scale applied per unit of effective risk. */
+  deceptionRiskScale: number;
+  /** Gaussian noise stddev for per-shot deception variation. */
+  deceptionNoiseStddev: number;
 }
 
 export const DEFAULT_PLAYER_ENGINE_CONFIG: PlayerEngineConfig = {
@@ -114,6 +122,11 @@ export const DEFAULT_PLAYER_ENGINE_CONFIG: PlayerEngineConfig = {
   // Serve
   maxServeNetClearance: 8.0,
   serveWidthRange: 0.8,
+
+  // Deception
+  deceptionBaseScale: 0.5,
+  deceptionRiskScale: 0.5,
+  deceptionNoiseStddev: 0.05,
 };
 
 /** Merge a partial config with defaults. */

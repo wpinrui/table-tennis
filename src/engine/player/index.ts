@@ -10,6 +10,7 @@
  */
 
 import type {
+  Player,
   PlayerEngine,
   PlayerEngineFactory,
   ShotContext,
@@ -18,7 +19,6 @@ import type {
   ServeIntention,
   PointSummary,
 } from "../types/index.js";
-import type { Player } from "../types/index.js";
 import type { Rng } from "../rng.js";
 import type { PlayerEngineConfig } from "./constants.js";
 import { mergePlayerConfig } from "./constants.js";

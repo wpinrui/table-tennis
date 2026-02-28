@@ -1,7 +1,12 @@
 import { describe, it, expect } from "vitest";
 import { createRng } from "../../rng.js";
 import { DEFAULT_PLAYER_ENGINE_CONFIG } from "../constants.js";
-import { mapTendency, mapTendencyWithRisk } from "../tendency-mapper.js";
+import {
+  mapTendency,
+  mapTendencyWithRisk,
+  adjustRiskForPressure,
+  computeDeceptionEffort,
+} from "../tendency-mapper.js";
 import { selectSide } from "../side-selection.js";
 import { computeTargetPosition, computeServeTarget } from "../target-placement.js";
 import { decideShot } from "../shot-decision.js";
@@ -266,6 +271,79 @@ describe("tendency-mapper", () => {
     // With same seed, high risk should produce a higher value for above-center tendency
     // (because the amplification adds (0.7 - 0.5) * 1.0 * 0.3 = +0.06)
     expect(highRisk).toBeGreaterThan(noRisk);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Shared computation tests (adjustRiskForPressure, computeDeceptionEffort)
+// ---------------------------------------------------------------------------
+
+describe("adjustRiskForPressure", () => {
+  it("returns base risk unchanged when not under pressure", () => {
+    const neutral = makeNeutralMatchState();
+    expect(adjustRiskForPressure(0.6, neutral, 50, cfg)).toBe(0.6);
+  });
+
+  it("high-mental player reduces risk under pressure", () => {
+    const pressure = makePressureMatchState();
+    const adjusted = adjustRiskForPressure(0.6, pressure, 90, cfg);
+    expect(adjusted).toBeLessThan(0.6);
+  });
+
+  it("low-mental player increases risk under pressure", () => {
+    const pressure = makePressureMatchState();
+    const adjusted = adjustRiskForPressure(0.6, pressure, 20, cfg);
+    expect(adjusted).toBeGreaterThan(0.6);
+  });
+
+  it("clamps result to [0, 1]", () => {
+    const pressure = makePressureMatchState();
+    expect(adjustRiskForPressure(0.01, pressure, 99, cfg)).toBeGreaterThanOrEqual(0);
+    expect(adjustRiskForPressure(0.99, pressure, 1, cfg)).toBeLessThanOrEqual(1);
+  });
+});
+
+describe("computeDeceptionEffort", () => {
+  it("returns values in [0, 1]", () => {
+    const rng = makeRng();
+    for (let i = 0; i < 50; i++) {
+      const v = computeDeceptionEffort(Math.random() * 100, Math.random(), rng, cfg);
+      expect(v).toBeGreaterThanOrEqual(0);
+      expect(v).toBeLessThanOrEqual(1);
+    }
+  });
+
+  it("higher deception attribute produces higher effort on average", () => {
+    let lowSum = 0;
+    let highSum = 0;
+    const n = 100;
+    for (let seed = 0; seed < n; seed++) {
+      const rng1 = makeRng(seed);
+      const rng2 = makeRng(seed + 10000);
+      lowSum += computeDeceptionEffort(20, 0.5, rng1, cfg);
+      highSum += computeDeceptionEffort(80, 0.5, rng2, cfg);
+    }
+    expect(highSum / n).toBeGreaterThan(lowSum / n);
+  });
+
+  it("higher risk increases effort", () => {
+    let lowRiskSum = 0;
+    let highRiskSum = 0;
+    const n = 100;
+    for (let seed = 0; seed < n; seed++) {
+      const rng1 = makeRng(seed);
+      const rng2 = makeRng(seed);
+      lowRiskSum += computeDeceptionEffort(70, 0.1, rng1, cfg);
+      highRiskSum += computeDeceptionEffort(70, 0.9, rng2, cfg);
+    }
+    expect(highRiskSum / n).toBeGreaterThan(lowRiskSum / n);
+  });
+
+  it("is deterministic with the same seed", () => {
+    const rng1 = makeRng(42);
+    const rng2 = makeRng(42);
+    expect(computeDeceptionEffort(70, 0.5, rng1, cfg))
+      .toBe(computeDeceptionEffort(70, 0.5, rng2, cfg));
   });
 });
 

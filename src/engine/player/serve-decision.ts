@@ -9,7 +9,12 @@ import type { ServeContext, ServeIntention } from "../types/index.js";
 import type { Rng } from "../rng.js";
 import type { PlayerEngineConfig } from "./constants.js";
 import { clamp } from "../physics/vec-math.js";
-import { mapTendency, mapTendencyWithRisk } from "./tendency-mapper.js";
+import {
+  mapTendency,
+  mapTendencyWithRisk,
+  adjustRiskForPressure,
+  computeDeceptionEffort,
+} from "./tendency-mapper.js";
 import { selectSide } from "./side-selection.js";
 import { computeServeTarget } from "./target-placement.js";
 
@@ -30,21 +35,12 @@ export function decideServe(
 
   // --- Step 1: Effective Risk ---
   let effectiveRisk = mapTendency(tendencies.risk, rng, config);
-
-  const isPressure =
-    context.matchState.isMatchPoint ||
-    context.matchState.isGamePoint ||
-    context.matchState.isDeuce;
-
-  if (isPressure) {
-    const mentalFactor =
-      (attributes.mental - config.mentalPressureThreshold) / 100;
-    effectiveRisk = clamp(
-      effectiveRisk - mentalFactor * config.pressureRiskAdjustment,
-      0,
-      1,
-    );
-  }
+  effectiveRisk = adjustRiskForPressure(
+    effectiveRisk,
+    context.matchState,
+    attributes.mental,
+    config,
+  );
 
   // --- Step 2: Side Selection ---
   // Both sides available for serves
@@ -110,11 +106,11 @@ export function decideServe(
   netClearance = Math.max(config.minNetClearance, netClearance);
 
   // --- Step 8: Deception Effort ---
-  const deceptionBase = attributes.deception / 100;
-  const deceptionEffort = clamp(
-    deceptionBase * (0.5 + effectiveRisk * 0.5) + rng.gaussian(0, 0.05),
-    0,
-    1,
+  const deceptionEffort = computeDeceptionEffort(
+    attributes.deception,
+    effectiveRisk,
+    rng,
+    config,
   );
 
   return {

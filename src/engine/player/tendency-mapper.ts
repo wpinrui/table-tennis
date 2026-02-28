@@ -1,6 +1,9 @@
 /**
  * Maps player tendencies (0-100 scale) to shot parameters (0-1 scale)
  * with per-shot Gaussian variation for natural shot-to-shot diversity.
+ *
+ * Also contains shared computations used by both shot and serve decision
+ * modules: pressure-adjusted risk and deception effort.
  */
 
 import type { Rng } from "../rng.js";
@@ -47,4 +50,49 @@ export function mapTendencyWithRisk(
   const amplified = base + (base - 0.5) * riskFactor * config.riskAmplification;
   const variation = rng.gaussian(0, config.tendencyVariationStddev);
   return clamp(amplified + variation, 0, 1);
+}
+
+/**
+ * Adjust risk based on pressure situation and player's mental attribute.
+ *
+ * High-mental players stay calm under pressure (risk decreases).
+ * Low-mental players panic under pressure (risk increases).
+ * Returns the original risk unchanged if no pressure is detected.
+ */
+export function adjustRiskForPressure(
+  baseRisk: number,
+  matchState: { isMatchPoint: boolean; isGamePoint: boolean; isDeuce: boolean },
+  mental: number,
+  config: PlayerEngineConfig,
+): number {
+  const isPressure =
+    matchState.isMatchPoint || matchState.isGamePoint || matchState.isDeuce;
+  if (!isPressure) return baseRisk;
+
+  const mentalFactor = (mental - config.mentalPressureThreshold) / 100;
+  return clamp(
+    baseRisk - mentalFactor * config.pressureRiskAdjustment,
+    0,
+    1,
+  );
+}
+
+/**
+ * Compute deception effort from a player's deception attribute and risk level.
+ *
+ * Higher risk increases deception effort. Gaussian noise adds per-shot variation.
+ */
+export function computeDeceptionEffort(
+  deception: number,
+  effectiveRisk: number,
+  rng: Rng,
+  config: PlayerEngineConfig,
+): number {
+  const base = deception / 100;
+  return clamp(
+    base * (config.deceptionBaseScale + effectiveRisk * config.deceptionRiskScale) +
+      rng.gaussian(0, config.deceptionNoiseStddev),
+    0,
+    1,
+  );
 }

@@ -10,7 +10,12 @@ import type { ShotContext, ShotIntention } from "../types/index.js";
 import type { Rng } from "../rng.js";
 import type { PlayerEngineConfig } from "./constants.js";
 import { clamp } from "../physics/vec-math.js";
-import { mapTendency, mapTendencyWithRisk } from "./tendency-mapper.js";
+import {
+  mapTendency,
+  mapTendencyWithRisk,
+  adjustRiskForPressure,
+  computeDeceptionEffort,
+} from "./tendency-mapper.js";
 import { selectSide } from "./side-selection.js";
 import { computeTargetPosition } from "./target-placement.js";
 
@@ -33,24 +38,12 @@ export function decideShot(
 
   // --- Step 1: Effective Risk ---
   let effectiveRisk = mapTendency(tendencies.riskTolerance, rng, config);
-
-  // Pressure adjustment
-  const isPressure =
-    context.matchState.isMatchPoint ||
-    context.matchState.isGamePoint ||
-    context.matchState.isDeuce;
-
-  if (isPressure) {
-    // mentalFactor > 0 for high-mental players (reduces risk = stays calm)
-    // mentalFactor < 0 for low-mental players (increases risk = panics)
-    const mentalFactor =
-      (attributes.mental - config.mentalPressureThreshold) / 100;
-    effectiveRisk = clamp(
-      effectiveRisk - mentalFactor * config.pressureRiskAdjustment,
-      0,
-      1,
-    );
-  }
+  effectiveRisk = adjustRiskForPressure(
+    effectiveRisk,
+    context.matchState,
+    attributes.mental,
+    config,
+  );
 
   // Positional safety: when stretched, play safer
   if (arrival.positionalDeficit > config.safetyDeficitThreshold) {
@@ -117,11 +110,11 @@ export function decideShot(
   netClearanceCm = Math.max(config.minNetClearance, netClearanceCm);
 
   // --- Step 8: Deception Effort ---
-  const deceptionBase = attributes.deception / 100;
-  const deceptionEffort = clamp(
-    deceptionBase * (0.5 + effectiveRisk * 0.5) + rng.gaussian(0, 0.05),
-    0,
-    1,
+  const deceptionEffort = computeDeceptionEffort(
+    attributes.deception,
+    effectiveRisk,
+    rng,
+    config,
   );
 
   // --- Step 9: Recovery Target ---
