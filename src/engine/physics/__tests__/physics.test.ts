@@ -55,6 +55,7 @@ function makeIncomingBall(): BallFlight {
     netContact: false,
     edgeContact: false,
     executionQuality: 0.85,
+    flightTime: 0.35,
   };
 }
 

@@ -28,8 +28,6 @@ import { computeExecutionQuality, computeServeQuality, applyError } from "./exec
 import {
   v2lerp,
   v2dist,
-  v3mag,
-  v3sub,
   clamp,
 } from "./vec-math.js";
 
@@ -76,11 +74,8 @@ export class DefaultPhysicsEngine implements PhysicsEngine {
       z: contactHeight,
     };
 
-    // Time available = flight time (already computed in BallFlight)
-    // We estimate from ball speed and distance
-    const ballSpeed = v3mag(ball.velocity);
-    const distance = v3mag(v3sub(ball.landingPosition, ball.startPosition));
-    const timeAvailable = ballSpeed > 0 ? distance / ballSpeed : this.config.fallbackTimeAvailable;
+    // Time available = flight time from paddle contact to table landing
+    const timeAvailable = ball.flightTime > 0 ? ball.flightTime : this.config.fallbackTimeAvailable;
 
     // Positional deficit: how far the receiver must move to reach the ball
     const idealContactPos: Vec2 = { x: arrivalX, y: arrivalY };
@@ -173,6 +168,7 @@ export class DefaultPhysicsEngine implements PhysicsEngine {
       netContact: trajectory.netContact,
       edgeContact: trajectory.edgeContact,
       executionQuality: quality,
+      flightTime: trajectory.flightTime,
     };
   }
 
@@ -254,6 +250,7 @@ export class DefaultPhysicsEngine implements PhysicsEngine {
       netContact: trajectory.netContact,
       edgeContact: trajectory.edgeContact,
       executionQuality: quality,
+      flightTime: trajectory.flightTime,
     };
   }
 

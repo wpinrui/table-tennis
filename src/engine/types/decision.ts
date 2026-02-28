@@ -163,6 +163,8 @@ export interface BallFlight {
    * spin misread, stamina, and risk taken.
    */
   executionQuality: number;
+  /** Total flight time from paddle contact to landing (seconds). */
+  flightTime: number;
 }
 
 // ---------------------------------------------------------------------------
