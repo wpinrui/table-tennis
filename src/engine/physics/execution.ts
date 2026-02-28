@@ -93,7 +93,7 @@ export function applyError(
   // Angular deviation on velocity direction (radians)
   // Accuracy affects how tightly the player can place the ball — worse accuracy
   // widens the angular error even at high execution quality.
-  const angularErrorScale = config.baseErrorStddev * errorScale * (0.3 + 0.7 * accuracyFactor);
+  const angularErrorScale = config.baseErrorStddev * errorScale * (config.accuracyErrorFloor + (1 - config.accuracyErrorFloor) * accuracyFactor);
   const angleError = rng.gaussian(0, angularErrorScale);
   const elevationError = rng.gaussian(0, angularErrorScale * 0.5);
 
@@ -110,7 +110,7 @@ export function applyError(
   };
 
   // Spin magnitude error (percentage deviation)
-  const spinError = 1 + rng.gaussian(0, errorScale * 0.2);
+  const spinError = 1 + rng.gaussian(0, errorScale * config.spinErrorScale);
   const spin: Vec3 = {
     x: intendedSpin.x * spinError,
     y: intendedSpin.y * spinError,

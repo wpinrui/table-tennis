@@ -127,7 +127,11 @@ export function simulateFlight(
           // Close enough to clip over — net contact, deflect trajectory
           netContact = true;
           // Reduce vertical and forward velocity (net absorbs energy)
-          vel = { x: vel.x * 0.7, y: vel.y * 0.5, z: Math.max(vel.z, vel.z * 0.3) };
+          vel = {
+            x: vel.x * config.netClipRetentionX,
+            y: vel.y * config.netClipRetentionY,
+            z: Math.max(vel.z, vel.z * config.netClipMinRetentionZ),
+          };
           crossedNet = true;
         } else {
           // Into the net — point over
@@ -172,9 +176,9 @@ export function simulateFlight(
           edgeContact = true;
           // Edge contact: apply random deflection
           const bounced = applyBounce(vel, spn, config);
-          bounced.velocity.x += rng.gaussian(0, 30);
-          bounced.velocity.y += rng.gaussian(0, 20);
-          bounced.velocity.z *= 0.5 + rng.next() * 0.5;
+          bounced.velocity.x += rng.gaussian(0, config.edgeDeflectionStddevX);
+          bounced.velocity.y += rng.gaussian(0, config.edgeDeflectionStddevY);
+          bounced.velocity.z *= config.edgeDeflectionMinZRetention + rng.next() * (1 - config.edgeDeflectionMinZRetention);
           vel = bounced.velocity;
           spn = bounced.spin;
         } else {

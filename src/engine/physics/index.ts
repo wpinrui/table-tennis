@@ -60,7 +60,7 @@ export class DefaultPhysicsEngine implements PhysicsEngine {
 
     // Estimate bounce height from landing velocity Z (post-bounce)
     // A reasonable contact height is ~20-40cm above table
-    const contactHeight = 20 + Math.abs(ball.velocity.z) * 0.02;
+    const contactHeight = this.config.baseContactHeight + Math.abs(ball.velocity.z) * this.config.contactHeightVelocityScale;
 
     const ballPosition: Vec3 = {
       x: arrivalX,
@@ -72,7 +72,7 @@ export class DefaultPhysicsEngine implements PhysicsEngine {
     // We estimate from ball speed and distance
     const ballSpeed = v3mag(ball.velocity);
     const distance = v3mag(v3sub(ball.landingPosition, ball.startPosition));
-    const timeAvailable = ballSpeed > 0 ? distance / ballSpeed : 0.5;
+    const timeAvailable = ballSpeed > 0 ? distance / ballSpeed : this.config.fallbackTimeAvailable;
 
     // Positional deficit: how far the receiver must move to reach the ball
     const idealContactPos: Vec2 = { x: arrivalX, y: arrivalY };
@@ -201,8 +201,8 @@ export class DefaultPhysicsEngine implements PhysicsEngine {
     // Serve must bounce on server's half first, then reach receiver's half
     // Target for first bounce: somewhere on server's half
     const firstBounceTarget: Vec2 = {
-      x: intention.targetPosition.x * 0.3, // Slight X offset toward intended side
-      y: halfTable * 0.5, // Middle of server's half
+      x: intention.targetPosition.x * this.config.serveFirstBounceXScale,
+      y: halfTable * this.config.serveFirstBounceYFraction,
     };
 
     // Compute velocity to reach first bounce target
@@ -358,7 +358,7 @@ export class DefaultPhysicsEngine implements PhysicsEngine {
     }
 
     const g = this.config.gravity;
-    const horizontalSpeed = speed * 0.85; // Most of the speed goes horizontal
+    const horizontalSpeed = speed * this.config.horizontalSpeedFraction;
     const totalFlightTime = horizontalDist / Math.max(horizontalSpeed, 1);
 
     // z(t) = start.z + vz*t - 0.5*g*t²
@@ -451,7 +451,7 @@ export class DefaultPhysicsEngine implements PhysicsEngine {
     // Physics just reports which sides are geometrically reachable.
     const relativeX = ballPos.x - playerPos.x;
 
-    if (positionalDeficit > 0.85) {
+    if (positionalDeficit > this.config.stretchThreshold) {
       // Severely stretched — only one side available (whichever is closer)
       return relativeX >= 0 ? ["forehand"] : ["backhand"];
     }

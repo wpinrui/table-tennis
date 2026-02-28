@@ -58,6 +58,48 @@ export interface PhysicsConfig {
   // --- Serve ---
   serveContactHeight: number; // cm above table surface at serve contact
   serveStartDepth: number;    // cm behind end line at serve start
+  /** First-bounce X offset as fraction of intended target X. */
+  serveFirstBounceXScale: number;
+  /** First-bounce Y position as fraction of server's half-table depth. */
+  serveFirstBounceYFraction: number;
+
+  // --- Arrival estimation ---
+  /** Base contact height above table (cm) when estimating ball arrival. */
+  baseContactHeight: number;
+  /** Scale factor: additional contact height per unit of |velocity.z|. */
+  contactHeightVelocityScale: number;
+  /** Fallback time available (seconds) when ball speed is zero. */
+  fallbackTimeAvailable: number;
+
+  // --- Velocity computation ---
+  /** Fraction of total shot speed allocated to horizontal components. */
+  horizontalSpeedFraction: number;
+
+  // --- Net clip deflection ---
+  /** X velocity retention after clipping the net (0-1). */
+  netClipRetentionX: number;
+  /** Y velocity retention after clipping the net (0-1). */
+  netClipRetentionY: number;
+  /** Minimum Z velocity retention when clipping net while descending (0-1). */
+  netClipMinRetentionZ: number;
+
+  // --- Edge contact deflection ---
+  /** Stddev of random X velocity change on edge contact (cm/s). */
+  edgeDeflectionStddevX: number;
+  /** Stddev of random Y velocity change on edge contact (cm/s). */
+  edgeDeflectionStddevY: number;
+  /** Minimum Z velocity retention on edge contact (0-1); actual = this + random*(1-this). */
+  edgeDeflectionMinZRetention: number;
+
+  // --- Error model tuning ---
+  /** Minimum error fraction even at perfect accuracy (0-1). */
+  accuracyErrorFloor: number;
+  /** Spin error scale relative to execution quality error. */
+  spinErrorScale: number;
+
+  // --- Available sides ---
+  /** Positional deficit above which only one paddle side is reachable (0-1). */
+  stretchThreshold: number;
 
   // --- Speed scaling ---
   /** Converts player power ceiling (0-100) to max ball speed in cm/s. */
@@ -106,6 +148,33 @@ export const DEFAULT_PHYSICS_CONFIG: PhysicsConfig = {
   // Serve
   serveContactHeight: 30,
   serveStartDepth: 20,
+  serveFirstBounceXScale: 0.3,
+  serveFirstBounceYFraction: 0.5,
+
+  // Arrival estimation
+  baseContactHeight: 20,
+  contactHeightVelocityScale: 0.02,
+  fallbackTimeAvailable: 0.5,
+
+  // Velocity computation
+  horizontalSpeedFraction: 0.85,
+
+  // Net clip deflection
+  netClipRetentionX: 0.7,
+  netClipRetentionY: 0.5,
+  netClipMinRetentionZ: 0.3,
+
+  // Edge contact deflection
+  edgeDeflectionStddevX: 30,
+  edgeDeflectionStddevY: 20,
+  edgeDeflectionMinZRetention: 0.5,
+
+  // Error model tuning
+  accuracyErrorFloor: 0.3,
+  spinErrorScale: 0.2,
+
+  // Available sides
+  stretchThreshold: 0.85,
 
   // Speed scaling
   powerToSpeed: 3000,
