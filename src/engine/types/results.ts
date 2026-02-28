@@ -1,4 +1,4 @@
-import type { StrokeSide } from "./player";
+import type { StrokeSide } from "./player.js";
 
 /** 3D vector in cm. Origin at table center. X=width, Y=length, Z=height (table=0). */
 export interface Vec3 {

@@ -1,5 +1,5 @@
-import type { Vec2, Vec3 } from "./results";
-import type { Player, StrokeSide, StrokeCapabilities, Equipment } from "./player";
+import type { Vec2, Vec3, PointOutcomeReason } from "./results.js";
+import type { Player, StrokeSide, StrokeCapabilities, Equipment } from "./player.js";
 
 // ---------------------------------------------------------------------------
 // Player Engine — input types
@@ -163,6 +163,8 @@ export interface BallFlight {
    * spin misread, stamina, and risk taken.
    */
   executionQuality: number;
+  /** Total flight time from paddle contact to landing (seconds). */
+  flightTime: number;
 }
 
 // ---------------------------------------------------------------------------
@@ -179,16 +181,6 @@ export type ServeRuling =
 export type ShotRuling =
   | { result: "continue" }
   | { result: "point"; winner: string; reason: PointOutcomeReason };
-
-/**
- * How a point ended. Kept minimal — covers all cases without
- * over-categorizing physics events.
- */
-export type PointOutcomeReason =
-  | "unreturnable"
-  | "unforcedError"
-  | "offTable"
-  | "intoNet";
 
 // ---------------------------------------------------------------------------
 // Match state — shared context from umpire + match engine

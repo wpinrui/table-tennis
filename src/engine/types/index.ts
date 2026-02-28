@@ -10,7 +10,7 @@ export type {
   StrokeTendencies,
   ServeTendencies,
   Player,
-} from "./player";
+} from "./player.js";
 
 export type {
   TournamentFormat,
@@ -18,7 +18,7 @@ export type {
   MatchRules,
   GroupConfig,
   TournamentConfig,
-} from "./tournament";
+} from "./tournament.js";
 
 export type {
   Vec3,
@@ -34,7 +34,7 @@ export type {
   BracketRound,
   Standing,
   TournamentResults,
-} from "./results";
+} from "./results.js";
 
 export type {
   ArrivalState,
@@ -52,7 +52,7 @@ export type {
   PhysicsEngine,
   UmpireEngine,
   PlayerEngineFactory,
-} from "./decision";
+} from "./decision.js";
 
 export type {
   EloHistoryEntry,
@@ -60,4 +60,4 @@ export type {
   PlayerRecord,
   EloConfig,
   Ledger,
-} from "./ledger";
+} from "./ledger.js";
