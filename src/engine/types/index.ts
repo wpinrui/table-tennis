@@ -43,6 +43,7 @@ export type {
   ShotIntention,
   ServeIntention,
   BallFlight,
+  ShotDegradation,
   ServeRuling,
   ShotRuling,
   MatchState,

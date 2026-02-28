@@ -220,6 +220,8 @@ export interface RecordedShot {
   side: StrokeSide;
   /** The ball flight that resulted. */
   ballFlight: BallFlight;
+  /** Deception effort applied on this shot (0-1). Populated by match engine. */
+  deceptionEffort?: number;
 }
 
 /** Minimal summary of a completed point (for trend analysis in player engine). */
@@ -232,6 +234,21 @@ export interface PointSummary {
   rallyLength: number;
   /** How the point ended. */
   reason: PointOutcomeReason;
+}
+
+// ---------------------------------------------------------------------------
+// Degradation context — passed from match engine to physics engine
+// ---------------------------------------------------------------------------
+
+/**
+ * Additional degradation factors for shot execution quality,
+ * computed by the player engine and passed through by the match engine.
+ */
+export interface ShotDegradation {
+  /** How badly the incoming spin was misread (0 = perfect, 1 = catastrophic). */
+  spinMisread: number;
+  /** Current stamina level (1 = fresh, 0 = exhausted). */
+  staminaFactor: number;
 }
 
 // ---------------------------------------------------------------------------
@@ -259,6 +276,10 @@ export interface PlayerEngine {
   onGameEnd(gameWinner: string): void;
   /** Called when this player takes a timeout. */
   onTimeout(): void;
+  /** Spin misread from the most recent decideShot call (0-1). */
+  getLastMisread(): number;
+  /** Current stamina factor (1 = fresh, 0 = exhausted). */
+  getStaminaFactor(): number;
 }
 
 /**
@@ -279,24 +300,27 @@ export interface PhysicsEngine {
 
   /**
    * Execute a rally shot intention and produce the resulting ball flight.
-   * Applies execution quality degradation based on risk, position, etc.
+   * Applies execution quality degradation based on risk, position,
+   * spin misread, stamina, etc.
    */
   executeShot(
     intention: ShotIntention,
     capabilities: StrokeCapabilities,
     equipment: Equipment,
     arrival: ArrivalState,
+    degradation?: ShotDegradation,
   ): BallFlight;
 
   /**
    * Execute a serve intention and produce the resulting ball flight.
-   * Applies error based on service attribute.
+   * Applies error based on service attribute and stamina.
    */
   executeServe(
     intention: ServeIntention,
     capabilities: StrokeCapabilities,
     equipment: Equipment,
     serviceSkill: number,
+    staminaFactor?: number,
   ): BallFlight;
 
   /**

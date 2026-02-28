@@ -21,6 +21,8 @@ import { clamp } from "../math/vec-math.js";
  * @param timeAvailable - Seconds available to prepare
  * @param riskLevel - How close to ceilings (0-1), max of power/spin fractions
  * @param config - Physics config for weight tuning
+ * @param spinMisread - How badly the incoming spin was misread (0-1, default 0)
+ * @param staminaFactor - Current stamina (1 = fresh, 0 = exhausted, default 1)
  */
 export function computeExecutionQuality(
   consistency: number,
@@ -28,6 +30,8 @@ export function computeExecutionQuality(
   timeAvailable: number,
   riskLevel: number,
   config: PhysicsConfig,
+  spinMisread: number = 0,
+  staminaFactor: number = 1,
 ): number {
   const baseQuality = consistency / 100;
 
@@ -37,29 +41,36 @@ export function computeExecutionQuality(
     baseQuality *
     (1 - positionalDeficit * config.positionWeight) *
     (1 - timePressure * config.timePressureWeight) *
-    (1 - riskLevel * config.riskWeight);
+    (1 - riskLevel * config.riskWeight) *
+    (1 - spinMisread * config.spinMisreadWeight) *
+    Math.pow(clamp(staminaFactor, 0, 1), config.staminaWeight);
 
   return clamp(quality, 0, 1);
 }
 
 /**
  * Compute execution quality for a serve.
- * No positional deficit or time pressure — quality based on service skill + risk.
+ * No positional deficit or time pressure — quality based on service skill + risk + stamina.
  *
  * @param serviceSkill - Player's service attribute (0-100)
  * @param consistency - Player's stroke consistency for the serve side (0-100)
  * @param riskLevel - How close to ceilings (0-1)
  * @param config - Physics config for weight tuning
+ * @param staminaFactor - Current stamina (1 = fresh, 0 = exhausted, default 1)
  */
 export function computeServeQuality(
   serviceSkill: number,
   consistency: number,
   riskLevel: number,
   config: PhysicsConfig,
+  staminaFactor: number = 1,
 ): number {
   // Serve quality blends service skill and consistency
   const baseQuality = ((serviceSkill / 100) + (consistency / 100)) / 2;
-  const quality = baseQuality * (1 - riskLevel * config.riskWeight);
+  const quality =
+    baseQuality *
+    (1 - riskLevel * config.riskWeight) *
+    Math.pow(clamp(staminaFactor, 0, 1), config.staminaWeight);
   return clamp(quality, 0, 1);
 }
 

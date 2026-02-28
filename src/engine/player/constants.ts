@@ -122,6 +122,16 @@ export interface PlayerEngineConfig {
   spinNoiseStddev: number;
   /** Epsilon for zero-spin detection (avoids division by zero). */
   spinMisreadEpsilon: number;
+
+  // --- Stamina ---
+  /** Base fatigue gained per shot (before stamina attribute scaling). */
+  staminaDrainBase: number;
+  /** Extra fatigue per unit of positional deficit (stretched play costs more). */
+  staminaDrainDeficitScale: number;
+  /** Fatigue recovered between games (fraction of current fatigue). */
+  staminaGameRecovery: number;
+  /** Fatigue recovered when taking a timeout (fraction of current fatigue). */
+  staminaTimeoutRecovery: number;
 }
 
 export const DEFAULT_PLAYER_ENGINE_CONFIG: PlayerEngineConfig = {
@@ -197,6 +207,12 @@ export const DEFAULT_PLAYER_ENGINE_CONFIG: PlayerEngineConfig = {
   minReadAccuracy: 0.05,
   spinNoiseStddev: 0.4,
   spinMisreadEpsilon: 0.001,
+
+  // Stamina
+  staminaDrainBase: 0.002,
+  staminaDrainDeficitScale: 0.005,
+  staminaGameRecovery: 0.15,
+  staminaTimeoutRecovery: 0.1,
 };
 
 /** Merge a partial config with defaults. */
