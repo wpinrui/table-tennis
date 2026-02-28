@@ -12,6 +12,33 @@ import type { Rng } from "../rng.js";
 import type { PlayerEngineConfig } from "./constants.js";
 import { clamp } from "../physics/vec-math.js";
 
+/** Compute target Y magnitude from a depth bias (0=short, 1=deep). */
+function computeDepthY(
+  depthBias: number,
+  targetSign: number,
+  config: PlayerEngineConfig,
+): number {
+  const shortY = config.shortDepthFraction * config.tableHalfLength;
+  const deepY = config.deepDepthFraction * config.tableHalfLength;
+  const depthMag = shortY + depthBias * (deepY - shortY);
+  return targetSign * depthMag;
+}
+
+/** Clamp a target position to the valid table area on one half. */
+function clampToTableHalf(
+  x: number,
+  y: number,
+  targetSign: number,
+  config: PlayerEngineConfig,
+): Vec2 {
+  const clampedX = clamp(x, -config.tableHalfWidth, config.tableHalfWidth);
+  const clampedY =
+    targetSign < 0
+      ? clamp(y, -config.tableHalfLength, 0)
+      : clamp(y, 0, config.tableHalfLength);
+  return { x: clampedX, y: clampedY };
+}
+
 /**
  * Compute target position on the opponent's half of the table.
  *
@@ -35,10 +62,7 @@ export function computeTargetPosition(
   const targetSign = playerY >= 0 ? -1 : 1;
 
   // --- Depth (Y) ---
-  const shortY = config.shortDepthFraction * config.tableHalfLength;
-  const deepY = config.deepDepthFraction * config.tableHalfLength;
-  const depthMag = shortY + depthBias * (deepY - shortY);
-  let targetY = targetSign * depthMag;
+  let targetY = computeDepthY(depthBias, targetSign, config);
 
   // --- Width (X) ---
   // Edge margin narrows with higher risk
@@ -57,15 +81,7 @@ export function computeTargetPosition(
   targetX += rng.gaussian(0, config.targetJitterStddev);
   targetY += targetSign * rng.gaussian(0, config.targetJitterStddev);
 
-  // Clamp to valid table area on opponent's half
-  targetX = clamp(targetX, -config.tableHalfWidth, config.tableHalfWidth);
-  if (targetSign < 0) {
-    targetY = clamp(targetY, -config.tableHalfLength, 0);
-  } else {
-    targetY = clamp(targetY, 0, config.tableHalfLength);
-  }
-
-  return { x: targetX, y: targetY };
+  return clampToTableHalf(targetX, targetY, targetSign, config);
 }
 
 /**
@@ -88,10 +104,7 @@ export function computeServeTarget(
   // Target the opposite half from the server
   const targetSign = playerY >= 0 ? -1 : 1;
 
-  const shortY = config.shortDepthFraction * config.tableHalfLength;
-  const deepY = config.deepDepthFraction * config.tableHalfLength;
-  const depthMag = shortY + lengthTendency * (deepY - shortY);
-  let targetY = targetSign * depthMag;
+  let targetY = computeDepthY(lengthTendency, targetSign, config);
 
   // Width: use serve-specific range
   const maxX = config.tableHalfWidth * config.serveWidthRange;
@@ -106,13 +119,5 @@ export function computeServeTarget(
   targetX += rng.gaussian(0, config.serveJitterStddev);
   targetY += targetSign * rng.gaussian(0, config.serveJitterStddev);
 
-  // Clamp to valid table area on receiver's half
-  targetX = clamp(targetX, -config.tableHalfWidth, config.tableHalfWidth);
-  if (targetSign < 0) {
-    targetY = clamp(targetY, -config.tableHalfLength, 0);
-  } else {
-    targetY = clamp(targetY, 0, config.tableHalfLength);
-  }
-
-  return { x: targetX, y: targetY };
+  return clampToTableHalf(targetX, targetY, targetSign, config);
 }
