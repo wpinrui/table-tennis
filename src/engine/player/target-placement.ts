@@ -10,7 +10,7 @@
 import type { Vec2 } from "../types/index.js";
 import type { Rng } from "../rng.js";
 import type { PlayerEngineConfig } from "./constants.js";
-import { clamp } from "../physics/vec-math.js";
+import { clamp } from "../math/vec-math.js";
 
 /** Compute target Y magnitude from a depth bias (0=short, 1=deep). */
 function computeDepthY(

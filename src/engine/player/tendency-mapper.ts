@@ -8,7 +8,7 @@
 
 import type { Rng } from "../rng.js";
 import type { PlayerEngineConfig } from "./constants.js";
-import { clamp } from "../physics/vec-math.js";
+import { clamp } from "../math/vec-math.js";
 
 /**
  * Map a 0-100 tendency to a 0-1 parameter with per-shot Gaussian variation.

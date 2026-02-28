@@ -9,7 +9,7 @@
 import type { ShotContext, ShotIntention } from "../types/index.js";
 import type { Rng } from "../rng.js";
 import type { PlayerEngineConfig } from "./constants.js";
-import { clamp } from "../physics/vec-math.js";
+import { clamp } from "../math/vec-math.js";
 import {
   mapTendency,
   mapTendencyWithRisk,

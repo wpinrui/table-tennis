@@ -19,7 +19,7 @@
 import type { Vec3 } from "../types/index.js";
 import type { Rng } from "../rng.js";
 import type { PlayerEngineConfig } from "./constants.js";
-import { clamp, v3mag, v3sub } from "../physics/vec-math.js";
+import { clamp, v3mag, v3sub } from "../math/vec-math.js";
 
 /**
  * Compute how difficult the incoming spin is to read.
