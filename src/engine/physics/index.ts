@@ -10,7 +10,6 @@ import type {
   StrokeCapabilities,
   Equipment,
   StrokeSide,
-  RubberType,
   Rubber,
 } from "../types/index.js";
 import type {
@@ -26,13 +25,9 @@ import { mergeConfig } from "./constants.js";
 import { simulateFlight, simulateServe } from "./trajectory.js";
 import { computeExecutionQuality, computeServeQuality, applyError } from "./execution.js";
 import {
-  v2sub,
-  v2mag,
   v2lerp,
   v2dist,
   v3mag,
-  v3normalize,
-  v3scale,
   v3sub,
   clamp,
 } from "./vec-math.js";
@@ -150,7 +145,6 @@ export class DefaultPhysicsEngine implements PhysicsEngine {
     const intendedSpin = this.computeSpinVector(
       spinMag,
       intention.spinDirection,
-      rubber,
     );
 
     // Apply error
@@ -242,7 +236,6 @@ export class DefaultPhysicsEngine implements PhysicsEngine {
     const intendedSpin = this.computeSpinVector(
       spinMag,
       intention.spinDirection,
-      rubber,
     );
 
     // Apply error
@@ -334,6 +327,11 @@ export class DefaultPhysicsEngine implements PhysicsEngine {
 
   /**
    * Compute velocity vector to send ball from start to target with given net clearance.
+   *
+   * Uses projectile motion to find the initial z-velocity that:
+   * 1. Lands the ball at z=0 at the target position, AND
+   * 2. Clears the net (at Y=0) by at least netClearance cm.
+   * If both constraints conflict, net clearance wins (ball overshoots target).
    */
   private computeVelocity(
     start: Vec3,
@@ -341,7 +339,6 @@ export class DefaultPhysicsEngine implements PhysicsEngine {
     netClearance: number,
     speed: number,
   ): Vec3 {
-    // Direction in XY plane from start to target
     const dx = target.x - start.x;
     const dy = target.y - start.y;
     const horizontalDist = Math.sqrt(dx * dx + dy * dy);
@@ -350,56 +347,46 @@ export class DefaultPhysicsEngine implements PhysicsEngine {
       return { x: 0, y: 0, z: -speed * 0.5 };
     }
 
-    // We need the ball to clear the net (at Y=0) by netClearance cm.
-    // Target height for net crossing
-    const targetNetHeight = this.config.netHeight + netClearance;
-
-    // Simplified trajectory planning:
-    // Use projectile motion to compute the required launch angle
-    // The ball needs to reach targetNetHeight at the net (Y=0)
-    // and land at Z=0 at the target position
-
-    // Fraction of horizontal distance to net
-    const distToNet = Math.abs(start.y); // Distance from start to net
-    const netFraction = horizontalDist > 0 ? distToNet / horizontalDist : 0.5;
-
-    // Required vertical velocity to achieve net clearance
-    // Using basic projectile: z = vz*t - 0.5*g*t², and horizontal: d = vh*t
-    // At net: t_net = distToNet / vh
-    // z_net = vz * t_net - 0.5 * g * t_net²
-    // At landing: z = 0 at t_land
+    const g = this.config.gravity;
     const horizontalSpeed = speed * 0.85; // Most of the speed goes horizontal
-    const flightTimeToNet = distToNet / Math.max(horizontalSpeed, 1);
     const totalFlightTime = horizontalDist / Math.max(horizontalSpeed, 1);
 
-    // vz such that ball is at targetNetHeight at flightTimeToNet
-    // and hits z=0 at totalFlightTime:
     // z(t) = start.z + vz*t - 0.5*g*t²
-    // At t_land: 0 = start.z + vz*t_land - 0.5*g*t_land²
-    // => vz = (0.5*g*t_land² - start.z) / t_land
-    const vz = (0.5 * this.config.gravity * totalFlightTime * totalFlightTime - start.z) / totalFlightTime;
+    // Constraint 1: land at z=0 → vz = (0.5*g*t_land² - start.z) / t_land
+    const vzLand = (0.5 * g * totalFlightTime * totalFlightTime - start.z) / totalFlightTime;
 
-    // Direction in XY
+    // Constraint 2: clear net at height targetNetHeight when crossing Y=0
+    // Only applies when the ball actually crosses the net (start and target on opposite sides)
+    let vz = vzLand;
+    const ballCrossesNet = start.y * target.y < 0;
+    if (ballCrossesNet) {
+      const distToNet = Math.abs(start.y);
+      const flightTimeToNet = distToNet / Math.max(horizontalSpeed, 1);
+      const targetNetHeight = this.config.netHeight + netClearance;
+      // z(t_net) >= targetNetHeight → vz >= (targetNetHeight - start.z + 0.5*g*t_net²) / t_net
+      const vzNet = (targetNetHeight - start.z + 0.5 * g * flightTimeToNet * flightTimeToNet) / flightTimeToNet;
+      vz = Math.max(vzLand, vzNet);
+    }
+
     const dirX = dx / horizontalDist;
     const dirY = dy / horizontalDist;
 
     return {
       x: dirX * horizontalSpeed,
       y: dirY * horizontalSpeed,
-      z: -vz, // Negative because we computed vz as the amount needed to drop, so launch upward needs sign flip
+      z: vz,
     };
   }
 
   /**
    * Compute spin vector from magnitude and direction intention.
+   * Rubber type spin modifier is already applied in effectiveSpinCeiling,
+   * so this method only decomposes magnitude into topspin/sidespin axes.
    */
   private computeSpinVector(
     magnitude: number,
     direction: { topspin: number; sidespin: number },
-    rubber: Rubber,
   ): Vec3 {
-    const rubberMod = this.config.rubberTypeModifiers[rubber.type];
-
     // Topspin component → spin.y (positive = topspin, negative = backspin)
     // Sidespin component → spin.x
     // Gyrospin (spin.z) is a small residual
@@ -411,8 +398,8 @@ export class DefaultPhysicsEngine implements PhysicsEngine {
     const scale = total > 0 ? magnitude / total : 0;
 
     return {
-      x: sidespin * scale * rubberMod.spinGeneration,
-      y: topspin * scale * rubberMod.spinGeneration,
+      x: sidespin * scale,
+      y: topspin * scale,
       z: 0, // No gyrospin for now
     };
   }

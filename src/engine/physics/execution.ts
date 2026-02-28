@@ -9,7 +9,6 @@
  */
 
 import type { Vec2, Vec3 } from "../types/index.js";
-import type { SideCapabilities } from "../types/index.js";
 import type { PhysicsConfig } from "./constants.js";
 import type { Rng } from "../rng.js";
 import { clamp } from "./vec-math.js";

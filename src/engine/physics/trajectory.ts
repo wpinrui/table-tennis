@@ -8,7 +8,7 @@
 import type { Vec3 } from "../types/index.js";
 import type { PhysicsConfig } from "./constants.js";
 import type { Rng } from "../rng.js";
-import { v3add, v3sub, v3scale, v3cross, v3mag, v3normalize } from "./vec-math.js";
+import { v3add, v3scale, v3cross, v3mag } from "./vec-math.js";
 import { applyBounce } from "./bounce.js";
 
 export interface TrajectoryResult {
@@ -50,11 +50,11 @@ export function simulateFlight(
   const halfWidth = config.tableWidth / 2;  // ±76.25 cm in X
 
   // Air drag precomputed factor: ½ρCdA
-  // ρ_air ≈ 0.001225 g/cm³, A = π(d/2)²
+  const AIR_DENSITY = 0.001225; // g/cm³ at standard conditions
   const ballRadius = config.ballDiameter / 2;
   const ballArea = Math.PI * ballRadius * ballRadius;
-  const dragFactor = 0.5 * 0.001225 * config.dragCoefficient * ballArea;
-  const magnusFactor = config.magnusCoefficient * 0.001225 * ballArea;
+  const dragFactor = 0.5 * AIR_DENSITY * config.dragCoefficient * ballArea;
+  const magnusFactor = config.magnusCoefficient * AIR_DENSITY * ballArea;
 
   let pos = { ...startPos };
   let vel = { ...velocity };
