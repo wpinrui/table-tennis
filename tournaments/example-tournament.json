@@ -1,0 +1,13 @@
+{
+  "name": "Example Showdown",
+  "format": "singleElimination",
+  "rules": {
+    "bestOf": 7,
+    "pointsPerGame": 11,
+    "servesPerRotation": 2
+  },
+  "playerSource": "./players",
+  "seed": 42,
+  "seeding": "elo",
+  "thirdPlaceMatch": false
+}

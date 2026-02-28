@@ -1,0 +1,260 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/wpinrui/table-tennis/schemas/player.schema.json",
+  "title": "Player",
+  "description": "A table tennis player with skill attributes, equipment, shot repertoire, and playstyle preferences. Each player is a separate JSON file in the /players/ folder. Files can be hand-authored or AI-generated.",
+  "type": "object",
+  "required": ["name", "handedness", "attributes", "equipment", "preferences", "shots", "serves"],
+  "additionalProperties": false,
+  "properties": {
+    "name": {
+      "type": "string",
+      "description": "Player's display name. Must be unique across all player files.",
+      "minLength": 1
+    },
+    "handedness": {
+      "type": "string",
+      "enum": ["left", "right"],
+      "description": "Playing hand. Affects serve angles, forehand/backhand court coverage, and cross-court dynamics."
+    },
+    "elo": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Starting ELO rating. Optional — players without ELO are seeded last (randomly) in tournaments. Once the ELO ledger exists, the ledger value takes precedence over this field."
+    },
+    "attributes": {
+      "type": "object",
+      "description": "Global attributes that affect all shots and overall play. Scale: 0 (no ability) to 100 (theoretical human peak).",
+      "required": ["footwork", "reaction", "spinRead", "deception", "stamina", "mental"],
+      "additionalProperties": false,
+      "properties": {
+        "footwork": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 100,
+          "description": "Recovery speed between shots and ability to reach wide balls. Determines how far toward the recovery position the player moves before the next ball arrives. High footwork = rarely caught out of position."
+        },
+        "reaction": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 100,
+          "description": "Response time to fast shots. Affects time pressure degradation — a player with high reaction handles fast incoming balls with less quality loss."
+        },
+        "spinRead": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 100,
+          "description": "Accuracy of reading incoming spin (direction and magnitude). Defensive skill. Low = novice-level misreads (might mistake backspin for topspin). High = pro-level reads (correctly identifies spin type and weight). The receiver's shot selection and execution are based on perceived spin, not actual spin."
+        },
+        "deception": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 100,
+          "description": "Ability to disguise spin (same arm motion for different spins). Offensive skill. High = opponents can't tell what spin was applied. Interacts with spin range: wide range + high deception is devastating, wide range + low deception is readable, narrow range + high deception gains little."
+        },
+        "stamina": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 100,
+          "description": "Resistance to fatigue over long matches. As stamina depletes, all shot attributes (power, spin, accuracy, consistency) degrade subtly. High stamina = maintains peak performance deeper into matches."
+        },
+        "mental": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 100,
+          "description": "Performance under pressure. Affects play quality in high-stakes situations: deuce, match point, comebacks, decisive games. Low mental = chokes under pressure. High mental = thrives in clutch moments."
+        }
+      }
+    },
+    "equipment": {
+      "type": "object",
+      "description": "Paddle equipment configuration. Rubber type fundamentally changes viable shots and ball behavior.",
+      "required": ["blade", "forehandRubber", "backhandRubber"],
+      "additionalProperties": false,
+      "properties": {
+        "blade": {
+          "type": "object",
+          "description": "The paddle blade (wooden core).",
+          "required": ["speed"],
+          "additionalProperties": false,
+          "properties": {
+            "speed": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 100,
+              "description": "Blade speed rating. Affects how much pace the player can generate. Carbon blades rate higher; all-wood blades rate lower but offer more control."
+            }
+          }
+        },
+        "forehandRubber": {
+          "$ref": "#/$defs/rubber",
+          "description": "Rubber on the forehand side of the paddle."
+        },
+        "backhandRubber": {
+          "$ref": "#/$defs/rubber",
+          "description": "Rubber on the backhand side of the paddle."
+        }
+      }
+    },
+    "preferences": {
+      "type": "object",
+      "description": "Shot preference weights defining the player's playstyle DNA. Each value is a relative weight (0 to 1) indicating how often the player gravitates toward that shot type when they have a free choice. Weights do NOT need to sum to 1 — they are normalized at runtime. A chopper might have chop: 0.50, push: 0.20. An attacker might have topspinLoop: 0.45, smash: 0.20.",
+      "required": ["topspinLoop", "push", "block", "smash", "chop", "flick"],
+      "additionalProperties": false,
+      "properties": {
+        "topspinLoop": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "description": "Preference weight for topspin loop attacks."
+        },
+        "push": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "description": "Preference weight for push (controlled backspin return)."
+        },
+        "block": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "description": "Preference weight for blocking (absorbing opponent's power)."
+        },
+        "smash": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "description": "Preference weight for smash (flat, high-speed kill shot)."
+        },
+        "chop": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "description": "Preference weight for chop (heavy backspin, usually from mid-distance)."
+        },
+        "flick": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "description": "Preference weight for flick (wrist snap over short balls)."
+        }
+      }
+    },
+    "shots": {
+      "type": "object",
+      "description": "Shot repertoire. Each shot type has skill ratings that determine quality when executed. Not every player needs high ratings in every shot — gaps in the repertoire are realistic and create exploitable weaknesses.",
+      "required": ["topspinLoop", "push", "block", "smash", "chop", "flick"],
+      "additionalProperties": false,
+      "properties": {
+        "topspinLoop": { "$ref": "#/$defs/shotRatings", "description": "Topspin loop — the primary attacking shot. Heavy topspin, medium-to-high speed, arcing trajectory that dips onto the table." },
+        "push": { "$ref": "#/$defs/shotRatings", "description": "Push — controlled backspin return, usually short and low. Used to keep the ball tight and prevent attacks." },
+        "block": { "$ref": "#/$defs/shotRatings", "description": "Block — compact stroke absorbing the opponent's power. Redirects the ball with minimal backswing. Essential for close-to-table defense." },
+        "smash": { "$ref": "#/$defs/shotRatings", "description": "Smash — flat, maximum-speed kill shot against high balls. Minimal spin, maximum power. High risk/reward." },
+        "chop": { "$ref": "#/$defs/shotRatings", "description": "Chop — heavy backspin stroke, usually from mid-to-far distance. The signature shot of defensive players. Varied spin range makes choppers dangerous." },
+        "flick": { "$ref": "#/$defs/shotRatings", "description": "Flick — wrist-snap attack over short balls that can't be looped. Requires good timing and touch. Key for attacking short serves." }
+      }
+    },
+    "serves": {
+      "type": "object",
+      "description": "Serve arsenal. Serves are the most important shot in table tennis — the only shot where the player has full control of spin, placement, and timing. Each serve type has its own ratings. High serve skill inherently makes serves harder to read (higher spin magnitudes, wider spin ranges, better placement).",
+      "required": ["shortBackspin", "longTopspin", "pendulum", "reversePendulum", "tomahawk"],
+      "additionalProperties": false,
+      "properties": {
+        "shortBackspin": { "$ref": "#/$defs/shotRatings", "description": "Short backspin serve — lands short (near the net), low bounce, backspin. Prevents the receiver from attacking. The 'safe' serve." },
+        "longTopspin": { "$ref": "#/$defs/shotRatings", "description": "Long topspin serve — fast, deep, with topspin. Rushes the opponent but is easier to attack if read correctly." },
+        "pendulum": { "$ref": "#/$defs/shotRatings", "description": "Pendulum serve — forehand serve with sidespin + backspin/topspin variation. The most common deceptive serve in modern table tennis." },
+        "reversePendulum": { "$ref": "#/$defs/shotRatings", "description": "Reverse pendulum serve — opposite sidespin direction to pendulum. Used to create contrast and confusion when alternated with pendulum serves." },
+        "tomahawk": { "$ref": "#/$defs/shotRatings", "description": "Tomahawk serve — backhand serve with heavy sidespin. Distinctive motion, can generate extreme spin. Less common but effective when mastered." }
+      }
+    },
+    "badges": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "uniqueItems": true,
+      "description": "Optional array of badge identifiers that modify simulation calculations. Badges can be positive (buffs) or negative (flaws). The badge system is designed but not active in Phase 1 — this field is accepted but ignored until badges are implemented.",
+      "default": []
+    }
+  },
+  "$defs": {
+    "rubber": {
+      "type": "object",
+      "description": "Paddle rubber configuration. Rubber type fundamentally changes what shots are viable and how the ball behaves off the bat.",
+      "required": ["type", "spin", "speed", "control"],
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": ["inverted", "shortPips", "longPips", "antispin"],
+          "description": "Rubber surface type. inverted = smooth, grippy, maximum spin (most common). shortPips = small pimples out, less spin-sensitive, good for flat hitting. longPips = long pimples out, reverses incoming spin, disrupts opponents. antispin = slick surface, minimal friction, deadens spin."
+        },
+        "spin": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 100,
+          "description": "Spin generation capability. How much spin the rubber can impart on the ball."
+        },
+        "speed": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 100,
+          "description": "Speed capability. How much pace the rubber adds to shots."
+        },
+        "control": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 100,
+          "description": "Control rating. How predictable and precise shots are off this rubber. Typically inversely correlated with speed."
+        }
+      }
+    },
+    "shotRatings": {
+      "type": "object",
+      "description": "Skill ratings for a specific shot type. Scale: 0 (no ability) to 100 (theoretical human peak).",
+      "required": ["power", "spinRange", "accuracy", "consistency"],
+      "additionalProperties": false,
+      "properties": {
+        "power": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 100,
+          "description": "Maximum power the player can generate on this shot. Subject to degradation from poor positioning, time pressure, and fatigue."
+        },
+        "spinRange": {
+          "type": "object",
+          "description": "The range of spin magnitude the player can apply on this shot. Min/max define the bounds — actual spin per shot is sampled from this range. Wide range = varied (deceptive with high deception stat). Narrow range = predictable.",
+          "required": ["min", "max"],
+          "additionalProperties": false,
+          "properties": {
+            "min": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 100,
+              "description": "Minimum spin magnitude the player puts on this shot type."
+            },
+            "max": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 100,
+              "description": "Maximum spin magnitude the player puts on this shot type. Must be >= min."
+            }
+          }
+        },
+        "accuracy": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 100,
+          "description": "Placement accuracy. Determines the width of the Gaussian error distribution around the intended target. High accuracy = tight grouping. Low accuracy = shots land far from intended target."
+        },
+        "consistency": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 100,
+          "description": "Shot-to-shot reliability. How often the player executes this shot at their skill level vs making an error. Low consistency = occasional shanks and mishits even in ideal conditions."
+        }
+      }
+    }
+  }
+}

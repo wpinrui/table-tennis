@@ -1,0 +1,99 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/wpinrui/table-tennis/schemas/tournament.schema.json",
+  "title": "Tournament Configuration",
+  "description": "Defines a tournament's format, rules, player selection, and seeding. Each tournament is a JSON file in /tournaments/. The engine reads this file, runs the simulation, and writes results to /results/.",
+  "type": "object",
+  "required": ["format", "rules", "playerSource", "seed"],
+  "additionalProperties": false,
+  "properties": {
+    "name": {
+      "type": "string",
+      "description": "Optional display name for the tournament (e.g., 'Spring Open 2026'). If omitted, the tournament is identified only by its auto-generated ID.",
+      "minLength": 1
+    },
+    "format": {
+      "type": "string",
+      "enum": ["singleElimination", "doubleElimination", "roundRobin", "groupKnockout"],
+      "description": "Tournament structure. singleElimination = one loss and out (Phase 1). doubleElimination = winners/losers bracket (Phase 3). roundRobin = everyone plays everyone (Phase 3). groupKnockout = group stage then single elimination (Phase 3)."
+    },
+    "rules": {
+      "type": "object",
+      "description": "Per-match scoring rules. Defaults follow ITTF standard rules.",
+      "additionalProperties": false,
+      "properties": {
+        "bestOf": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "Maximum number of games per match. Must be odd. The first player to win more than half wins the match. Default: 7 (first to 4 games).",
+          "default": 7
+        },
+        "pointsPerGame": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "Points needed to win a game (before deuce). At deuce (pointsPerGame - 1 all), a player must lead by 2 to win. Default: 11.",
+          "default": 11
+        },
+        "servesPerRotation": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "Number of consecutive serves before rotation. During deuce, serve alternates every 1 point regardless of this setting. Default: 2.",
+          "default": 2
+        }
+      }
+    },
+    "playerSource": {
+      "type": "string",
+      "description": "Path to the folder containing player JSON files. Relative to the project root or absolute path.",
+      "minLength": 1
+    },
+    "playerList": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "uniqueItems": true,
+      "description": "Optional list of player filenames (without path, e.g., 'zhang-jike.json') to include from playerSource. If omitted, all player files in playerSource are included."
+    },
+    "seed": {
+      "type": "integer",
+      "description": "RNG seed for reproducibility. Same players + same seed + same config = identical tournament results. Use different seeds to get different outcomes with the same player pool."
+    },
+    "seeding": {
+      "type": "string",
+      "enum": ["elo", "random"],
+      "description": "How players are seeded in the bracket. 'elo' = seed by ELO rating (from ledger, then player file, then unseeded). 'random' = fully random bracket placement. Default: 'elo'.",
+      "default": "elo"
+    },
+    "thirdPlaceMatch": {
+      "type": "boolean",
+      "description": "Whether to play a third-place match between the two semifinal losers. Only applies to elimination formats. Default: false.",
+      "default": false
+    },
+    "groupConfig": {
+      "type": "object",
+      "description": "Configuration for group stage. Only used when format is 'groupKnockout'.",
+      "required": ["numberOfGroups", "advancePerGroup"],
+      "additionalProperties": false,
+      "properties": {
+        "numberOfGroups": {
+          "type": "integer",
+          "minimum": 2,
+          "description": "Number of groups in the group stage. Players are distributed across groups by seeding."
+        },
+        "advancePerGroup": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "Number of players who advance from each group to the knockout stage."
+        }
+      }
+    }
+  },
+  "if": {
+    "properties": { "format": { "const": "groupKnockout" } }
+  },
+  "then": {
+    "required": ["groupConfig"]
+  }
+}

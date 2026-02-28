@@ -1,0 +1,302 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/wpinrui/table-tennis/schemas/results.schema.json",
+  "title": "Tournament Results",
+  "description": "Output of a tournament simulation. Contains full bracket, every match with game scores, point-by-point logs with shot-level trajectory data, and per-match statistics. Written by the engine to /results/.",
+  "type": "object",
+  "required": ["tournamentId", "date", "seed", "format", "players", "matches", "standings"],
+  "additionalProperties": false,
+  "properties": {
+    "tournamentId": {
+      "type": "string",
+      "description": "Auto-generated unique identifier (UUID v4) for this tournament run.",
+      "format": "uuid"
+    },
+    "tournamentName": {
+      "type": "string",
+      "description": "Display name from the tournament config, if provided."
+    },
+    "date": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO 8601 timestamp of when the simulation was run."
+    },
+    "seed": {
+      "type": "integer",
+      "description": "RNG seed used. Re-running with this seed and the same config produces identical results."
+    },
+    "format": {
+      "type": "string",
+      "description": "Tournament format used (mirrors config)."
+    },
+    "players": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "List of all player names in the tournament, in seeded order."
+    },
+    "bracket": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/bracketRound" },
+      "description": "Tournament bracket organized by rounds. Each round contains its matches. Round 0 = first round, final round = the final."
+    },
+    "matches": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/match" },
+      "description": "All matches in the tournament with full detail."
+    },
+    "standings": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["player", "position"],
+        "additionalProperties": false,
+        "properties": {
+          "player": { "type": "string", "description": "Player name." },
+          "position": { "type": "integer", "minimum": 1, "description": "Final standing (1 = winner)." }
+        }
+      },
+      "description": "Final tournament standings, ordered by position."
+    }
+  },
+  "$defs": {
+    "vec3": {
+      "type": "object",
+      "description": "3D vector in centimeters. Origin at table center. X = across width, Y = along length, Z = height (table surface = 0).",
+      "required": ["x", "y", "z"],
+      "additionalProperties": false,
+      "properties": {
+        "x": { "type": "number" },
+        "y": { "type": "number" },
+        "z": { "type": "number" }
+      }
+    },
+    "vec2": {
+      "type": "object",
+      "description": "2D position on the court (X, Y). Used for player positions.",
+      "required": ["x", "y"],
+      "additionalProperties": false,
+      "properties": {
+        "x": { "type": "number" },
+        "y": { "type": "number" }
+      }
+    },
+    "bracketRound": {
+      "type": "object",
+      "required": ["round", "matchIds"],
+      "additionalProperties": false,
+      "properties": {
+        "round": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Round number. 0 = first round."
+        },
+        "matchIds": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Match IDs in this round, in bracket order."
+        }
+      }
+    },
+    "shot": {
+      "type": "object",
+      "description": "A single shot in a rally. Records the player, shot type, full ball trajectory, both players' positions, and execution quality.",
+      "required": ["player", "shotType", "ballTrajectory", "playerPositions", "executionQuality"],
+      "additionalProperties": false,
+      "properties": {
+        "player": {
+          "type": "string",
+          "description": "Name of the player who hit this shot."
+        },
+        "shotType": {
+          "type": "string",
+          "description": "The shot type used. One of the shot types (topspinLoop, push, block, smash, chop, flick) or serve types (shortBackspin, longTopspin, pendulum, reversePendulum, tomahawk)."
+        },
+        "ballTrajectory": {
+          "type": "object",
+          "description": "Ball flight data for this shot. Enough to reconstruct the full trajectory via physics interpolation.",
+          "required": ["startPosition", "velocity", "spin", "landingPosition"],
+          "additionalProperties": false,
+          "properties": {
+            "startPosition": {
+              "$ref": "#/$defs/vec3",
+              "description": "Ball position at the moment of contact with the paddle (cm)."
+            },
+            "velocity": {
+              "$ref": "#/$defs/vec3",
+              "description": "Ball velocity vector at the moment of contact (cm/s)."
+            },
+            "spin": {
+              "$ref": "#/$defs/vec3",
+              "description": "Ball spin vector at the moment of contact (revolutions/s). X = sidespin, Y = topspin/backspin, Z = gyrospin. Positive Y = topspin, negative Y = backspin."
+            },
+            "apex": {
+              "$ref": "#/$defs/vec3",
+              "description": "Highest point of the ball's trajectory (cm). Useful for 3D visualization."
+            },
+            "landingPosition": {
+              "$ref": "#/$defs/vec3",
+              "description": "Where the ball lands on the table or where it goes out of play (cm). Z should be ~0 for table contact."
+            }
+          }
+        },
+        "playerPositions": {
+          "type": "object",
+          "description": "Both players' court positions at the moment this shot was hit.",
+          "required": ["player1", "player2"],
+          "additionalProperties": false,
+          "properties": {
+            "player1": { "$ref": "#/$defs/vec2", "description": "Position of the match's player1." },
+            "player2": { "$ref": "#/$defs/vec2", "description": "Position of the match's player2." }
+          }
+        },
+        "executionQuality": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "description": "How well the shot was executed relative to the player's peak ability (0 = worst possible, 1 = perfect execution). Degraded by positional deficit, time pressure, spin misread, and stamina."
+        }
+      }
+    },
+    "point": {
+      "type": "object",
+      "description": "A single point in a match. Contains the serve, full shot sequence (rally), and outcome.",
+      "required": ["gameNumber", "server", "serveType", "scoreBefore", "shots", "outcome"],
+      "additionalProperties": false,
+      "properties": {
+        "gameNumber": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "Which game this point belongs to (1-indexed)."
+        },
+        "server": {
+          "type": "string",
+          "description": "Name of the serving player."
+        },
+        "serveType": {
+          "type": "string",
+          "description": "The serve type used (shortBackspin, longTopspin, pendulum, reversePendulum, tomahawk)."
+        },
+        "scoreBefore": {
+          "type": "object",
+          "description": "Score in the current game BEFORE this point is played.",
+          "required": ["player1", "player2"],
+          "additionalProperties": false,
+          "properties": {
+            "player1": { "type": "integer", "minimum": 0 },
+            "player2": { "type": "integer", "minimum": 0 }
+          }
+        },
+        "shots": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/shot" },
+          "minItems": 1,
+          "description": "The full rally — every shot from serve to point end. First shot is always the serve."
+        },
+        "outcome": {
+          "type": "object",
+          "description": "How the point ended.",
+          "required": ["winner", "reason"],
+          "additionalProperties": false,
+          "properties": {
+            "winner": {
+              "type": "string",
+              "description": "Name of the player who won the point."
+            },
+            "reason": {
+              "type": "string",
+              "enum": ["unreturnable", "unforcedError", "offTable", "intoNet", "edgeBall", "netLet"],
+              "description": "How the point was won. unreturnable = winner hit a shot the opponent couldn't reach. unforcedError = loser made an error on a playable ball. offTable = ball went off the table. intoNet = ball hit the net and didn't go over. edgeBall = ball clipped the edge of the table (point to hitter). netLet = ball clipped the top of the net and dropped over (point to hitter)."
+            }
+          }
+        }
+      }
+    },
+    "matchStats": {
+      "type": "object",
+      "description": "Aggregated statistics for one player in a match.",
+      "required": ["pointsWon", "pointsLost", "pointsWonOnServe", "pointsWonOnReturn", "avgRallyLength", "unforcedErrors", "winners"],
+      "additionalProperties": false,
+      "properties": {
+        "pointsWon": { "type": "integer", "minimum": 0, "description": "Total points won." },
+        "pointsLost": { "type": "integer", "minimum": 0, "description": "Total points lost." },
+        "pointsWonOnServe": { "type": "integer", "minimum": 0, "description": "Points won when serving." },
+        "pointsWonOnReturn": { "type": "integer", "minimum": 0, "description": "Points won when receiving." },
+        "avgRallyLength": { "type": "number", "minimum": 0, "description": "Average number of shots per rally." },
+        "unforcedErrors": { "type": "integer", "minimum": 0, "description": "Points lost due to own errors on playable balls." },
+        "winners": { "type": "integer", "minimum": 0, "description": "Points won with unreturnable shots." },
+        "shotTypeDistribution": {
+          "type": "object",
+          "additionalProperties": { "type": "integer", "minimum": 0 },
+          "description": "Count of each shot type used (e.g., { topspinLoop: 45, push: 30, ... })."
+        }
+      }
+    },
+    "match": {
+      "type": "object",
+      "description": "A complete match between two players.",
+      "required": ["matchId", "round", "player1", "player2", "score", "games", "points", "stats"],
+      "additionalProperties": false,
+      "properties": {
+        "matchId": {
+          "type": "string",
+          "description": "Unique identifier for this match within the tournament."
+        },
+        "round": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Tournament round (0 = first round)."
+        },
+        "player1": {
+          "type": "string",
+          "description": "Name of player 1 (typically the higher seed)."
+        },
+        "player2": {
+          "type": "string",
+          "description": "Name of player 2."
+        },
+        "winner": {
+          "type": "string",
+          "description": "Name of the match winner."
+        },
+        "score": {
+          "type": "object",
+          "description": "Final match score (games won).",
+          "required": ["player1", "player2"],
+          "additionalProperties": false,
+          "properties": {
+            "player1": { "type": "integer", "minimum": 0 },
+            "player2": { "type": "integer", "minimum": 0 }
+          }
+        },
+        "games": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["player1Points", "player2Points"],
+            "additionalProperties": false,
+            "properties": {
+              "player1Points": { "type": "integer", "minimum": 0 },
+              "player2Points": { "type": "integer", "minimum": 0 }
+            }
+          },
+          "description": "Score for each game played (e.g., [{player1Points: 11, player2Points: 9}, ...])."
+        },
+        "points": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/point" },
+          "description": "Every point played in the match, in order."
+        },
+        "stats": {
+          "type": "object",
+          "description": "Per-player match statistics.",
+          "required": ["player1", "player2"],
+          "additionalProperties": false,
+          "properties": {
+            "player1": { "$ref": "#/$defs/matchStats" },
+            "player2": { "$ref": "#/$defs/matchStats" }
+          }
+        }
+      }
+    }
+  }
+}

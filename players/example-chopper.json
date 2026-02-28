@@ -1,0 +1,107 @@
+{
+  "name": "Kim Soo-jin",
+  "handedness": "right",
+  "elo": 1950,
+  "attributes": {
+    "footwork": 90,
+    "reaction": 82,
+    "spinRead": 85,
+    "deception": 80,
+    "stamina": 88,
+    "mental": 78
+  },
+  "equipment": {
+    "blade": { "speed": 55 },
+    "forehandRubber": {
+      "type": "inverted",
+      "spin": 85,
+      "speed": 70,
+      "control": 80
+    },
+    "backhandRubber": {
+      "type": "longPips",
+      "spin": 40,
+      "speed": 35,
+      "control": 90
+    }
+  },
+  "preferences": {
+    "topspinLoop": 0.10,
+    "push": 0.20,
+    "block": 0.15,
+    "smash": 0.03,
+    "chop": 0.50,
+    "flick": 0.02
+  },
+  "shots": {
+    "topspinLoop": {
+      "power": 60,
+      "spinRange": { "min": 40, "max": 70 },
+      "accuracy": 62,
+      "consistency": 58
+    },
+    "push": {
+      "power": 28,
+      "spinRange": { "min": 25, "max": 60 },
+      "accuracy": 82,
+      "consistency": 85
+    },
+    "block": {
+      "power": 35,
+      "spinRange": { "min": 10, "max": 45 },
+      "accuracy": 80,
+      "consistency": 82
+    },
+    "smash": {
+      "power": 65,
+      "spinRange": { "min": 5, "max": 15 },
+      "accuracy": 50,
+      "consistency": 45
+    },
+    "chop": {
+      "power": 30,
+      "spinRange": { "min": 10, "max": 90 },
+      "accuracy": 85,
+      "consistency": 88
+    },
+    "flick": {
+      "power": 48,
+      "spinRange": { "min": 20, "max": 45 },
+      "accuracy": 55,
+      "consistency": 52
+    }
+  },
+  "serves": {
+    "shortBackspin": {
+      "power": 20,
+      "spinRange": { "min": 35, "max": 80 },
+      "accuracy": 85,
+      "consistency": 88
+    },
+    "longTopspin": {
+      "power": 55,
+      "spinRange": { "min": 30, "max": 60 },
+      "accuracy": 70,
+      "consistency": 72
+    },
+    "pendulum": {
+      "power": 30,
+      "spinRange": { "min": 30, "max": 78 },
+      "accuracy": 75,
+      "consistency": 78
+    },
+    "reversePendulum": {
+      "power": 28,
+      "spinRange": { "min": 25, "max": 70 },
+      "accuracy": 72,
+      "consistency": 75
+    },
+    "tomahawk": {
+      "power": 32,
+      "spinRange": { "min": 30, "max": 72 },
+      "accuracy": 68,
+      "consistency": 70
+    }
+  },
+  "badges": []
+}

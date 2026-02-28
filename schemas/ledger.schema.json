@@ -1,0 +1,124 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/wpinrui/table-tennis/schemas/ledger.schema.json",
+  "title": "ELO Ledger",
+  "description": "Tracks ELO ratings, match history, and head-to-head records across tournament runs. Separate from player files — player files stay immutable as the source of truth for skills/equipment. The ledger is the source of truth for competitive history. Stored in /results/ledger.json.",
+  "type": "object",
+  "required": ["players", "config"],
+  "additionalProperties": false,
+  "properties": {
+    "players": {
+      "type": "object",
+      "description": "Per-player competitive records, keyed by player name.",
+      "additionalProperties": { "$ref": "#/$defs/playerRecord" }
+    },
+    "config": {
+      "type": "object",
+      "description": "ELO system configuration. Can be tuned to adjust rating volatility.",
+      "required": ["kFactor", "provisionalKFactor", "provisionalThreshold"],
+      "additionalProperties": false,
+      "properties": {
+        "kFactor": {
+          "type": "number",
+          "minimum": 1,
+          "description": "K-factor for established players. Controls how much a single match shifts ratings. Lower = more stable ratings. ITTF uses ~16-32. Default: 32.",
+          "default": 32
+        },
+        "provisionalKFactor": {
+          "type": "number",
+          "minimum": 1,
+          "description": "K-factor for provisional players (under provisionalThreshold matches). Higher than kFactor so new players converge to their true rating faster. Default: 64.",
+          "default": 64
+        },
+        "provisionalThreshold": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "Number of matches before a player is no longer considered provisional. Default: 10.",
+          "default": 10
+        }
+      }
+    }
+  },
+  "$defs": {
+    "playerRecord": {
+      "type": "object",
+      "description": "Competitive record for a single player across all tournaments.",
+      "required": ["currentElo", "matchesPlayed", "wins", "losses", "provisional", "history", "headToHead"],
+      "additionalProperties": false,
+      "properties": {
+        "currentElo": {
+          "type": "number",
+          "description": "Player's current ELO rating. Updated after each tournament."
+        },
+        "matchesPlayed": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Total matches played across all tournaments."
+        },
+        "wins": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Total match wins."
+        },
+        "losses": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Total match losses."
+        },
+        "provisional": {
+          "type": "boolean",
+          "description": "Whether the player is still in the provisional phase (matchesPlayed < provisionalThreshold). Provisional players have higher K-factor for faster convergence."
+        },
+        "history": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["tournamentId", "date", "eloBefore", "eloAfter", "eloChange"],
+            "additionalProperties": false,
+            "properties": {
+              "tournamentId": {
+                "type": "string",
+                "description": "ID of the tournament."
+              },
+              "tournamentName": {
+                "type": "string",
+                "description": "Display name of the tournament (if provided)."
+              },
+              "date": {
+                "type": "string",
+                "format": "date-time",
+                "description": "When the tournament was run."
+              },
+              "eloBefore": {
+                "type": "number",
+                "description": "ELO rating before this tournament."
+              },
+              "eloAfter": {
+                "type": "number",
+                "description": "ELO rating after this tournament."
+              },
+              "eloChange": {
+                "type": "number",
+                "description": "Net ELO change from this tournament (eloAfter - eloBefore)."
+              }
+            }
+          },
+          "description": "ELO history — one entry per tournament participated in, ordered chronologically."
+        },
+        "headToHead": {
+          "type": "object",
+          "description": "Head-to-head records against specific opponents, keyed by opponent name.",
+          "additionalProperties": {
+            "type": "object",
+            "required": ["wins", "losses"],
+            "additionalProperties": false,
+            "properties": {
+              "wins": { "type": "integer", "minimum": 0, "description": "Matches won against this opponent." },
+              "losses": { "type": "integer", "minimum": 0, "description": "Matches lost to this opponent." }
+            }
+          }
+        }
+      }
+    }
+  }
+}
