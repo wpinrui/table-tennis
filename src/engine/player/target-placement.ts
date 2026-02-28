@@ -73,21 +73,25 @@ export function computeTargetPosition(
  *
  * @param lengthTendency - Mapped serve length tendency (0-1). 0=short, 1=long.
  * @param riskFactor - Mapped serve risk (0-1).
+ * @param playerY - Server's Y position (sign determines which half to target).
  * @param rng - Seedable RNG.
  * @param config - Player engine config.
- * @returns Target position on receiver's half (always -Y, server is at +Y).
+ * @returns Target position on the receiver's half (opposite from server).
  */
 export function computeServeTarget(
   lengthTendency: number,
   riskFactor: number,
+  playerY: number,
   rng: Rng,
   config: PlayerEngineConfig,
 ): Vec2 {
-  // Server is always at +Y, so serves target -Y half
+  // Target the opposite half from the server
+  const targetSign = playerY >= 0 ? -1 : 1;
+
   const shortY = config.shortDepthFraction * config.tableHalfLength;
   const deepY = config.deepDepthFraction * config.tableHalfLength;
   const depthMag = shortY + lengthTendency * (deepY - shortY);
-  let targetY = -depthMag;
+  let targetY = targetSign * depthMag;
 
   // Width: use serve-specific range
   const maxX = config.tableHalfWidth * config.serveWidthRange;
@@ -100,11 +104,15 @@ export function computeServeTarget(
 
   // Per-shot jitter
   targetX += rng.gaussian(0, config.serveJitterStddev);
-  targetY += rng.gaussian(0, config.serveJitterStddev);
+  targetY += targetSign * rng.gaussian(0, config.serveJitterStddev);
 
-  // Clamp
+  // Clamp to valid table area on receiver's half
   targetX = clamp(targetX, -config.tableHalfWidth, config.tableHalfWidth);
-  targetY = clamp(targetY, -config.tableHalfLength, 0);
+  if (targetSign < 0) {
+    targetY = clamp(targetY, -config.tableHalfLength, 0);
+  } else {
+    targetY = clamp(targetY, 0, config.tableHalfLength);
+  }
 
   return { x: targetX, y: targetY };
 }

@@ -430,24 +430,33 @@ describe("target-placement", () => {
     expect(leftCount).toBeGreaterThan(100);
   });
 
-  it("serve targets are on receiver half", () => {
+  it("serve targets are on receiver half (server at +Y)", () => {
     for (let seed = 0; seed < 50; seed++) {
       const rng = makeRng(seed);
-      const target = computeServeTarget(0.5, 0.5, rng, cfg);
+      const target = computeServeTarget(0.5, 0.5, 160, rng, cfg);
       expect(target.y).toBeLessThanOrEqual(0);
       expect(target.y).toBeGreaterThanOrEqual(-cfg.tableHalfLength);
     }
   });
 
+  it("serve targets are on receiver half (server at -Y)", () => {
+    for (let seed = 0; seed < 50; seed++) {
+      const rng = makeRng(seed);
+      const target = computeServeTarget(0.5, 0.5, -160, rng, cfg);
+      expect(target.y).toBeGreaterThanOrEqual(0);
+      expect(target.y).toBeLessThanOrEqual(cfg.tableHalfLength);
+    }
+  });
+
   it("short serve tendency targets near net", () => {
     const rng = makeRng();
-    const target = computeServeTarget(0, 0.3, rng, cfg);
+    const target = computeServeTarget(0, 0.3, 160, rng, cfg);
     expect(target.y).toBeGreaterThan(-60);
   });
 
   it("long serve tendency targets near end line", () => {
     const rng = makeRng();
-    const target = computeServeTarget(1, 0.3, rng, cfg);
+    const target = computeServeTarget(1, 0.3, 160, rng, cfg);
     expect(target.y).toBeLessThan(-100);
   });
 });

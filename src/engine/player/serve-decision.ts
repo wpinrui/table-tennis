@@ -93,6 +93,7 @@ export function decideServe(
   const targetPosition = computeServeTarget(
     lengthMapped,
     effectiveRisk,
+    context.playerPosition.y,
     rng,
     config,
   );
