@@ -74,7 +74,7 @@ export function decideServe(
   // spinVariation controls per-serve noise on direction
   const variationScale = tendencies.spinVariation / 100;
   const topspin = clamp(
-    topspinBase + rng.gaussian(0, variationScale * 0.5),
+    topspinBase + rng.gaussian(0, variationScale * config.serveTopspinVariationScale),
     -1,
     1,
   );
@@ -83,7 +83,7 @@ export function decideServe(
   const sidespinBase = tendencies.sidespinBias / 100;
   const sidespinSign = rng.next() > 0.5 ? 1 : -1;
   const sidespin = clamp(
-    sidespinBase * sidespinSign + rng.gaussian(0, variationScale * 0.3),
+    sidespinBase * sidespinSign + rng.gaussian(0, variationScale * config.serveSidespinVariationScale),
     -1,
     1,
   );
@@ -102,7 +102,7 @@ export function decideServe(
   let netClearance =
     config.minNetClearance +
     (1 - effectiveRisk) * (config.maxServeNetClearance - config.minNetClearance);
-  netClearance += rng.gaussian(0, 0.5);
+  netClearance += rng.gaussian(0, config.serveClearanceNoiseStddev);
   netClearance = Math.max(config.minNetClearance, netClearance);
 
   // --- Step 8: Deception Effort ---

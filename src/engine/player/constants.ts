@@ -78,6 +78,34 @@ export interface PlayerEngineConfig {
   deceptionRiskScale: number;
   /** Gaussian noise stddev for per-shot deception variation. */
   deceptionNoiseStddev: number;
+
+  // --- Spin direction noise ---
+  /** Gaussian stddev for rally topspin direction noise. */
+  topspinNoiseStddev: number;
+  /** Gaussian stddev factor for rally sidespin direction noise. */
+  sidespinNoiseStddev: number;
+  /** Gaussian noise scale for serve topspin variation (multiplied by spinVariation). */
+  serveTopspinVariationScale: number;
+  /** Gaussian noise scale for serve sidespin variation (multiplied by spinVariation). */
+  serveSidespinVariationScale: number;
+
+  // --- Net clearance noise ---
+  /** How much risk reduces net clearance (0-1 fraction). */
+  netClearanceRiskReduction: number;
+  /** Gaussian stddev for rally net clearance noise (cm). */
+  shotClearanceNoiseStddev: number;
+  /** Gaussian stddev for serve net clearance noise (cm). */
+  serveClearanceNoiseStddev: number;
+
+  // --- Target placement noise ---
+  /** Width noise scale relative to maxX for rally shots. */
+  targetWidthNoiseScale: number;
+  /** Per-shot jitter stddev for rally target position (cm). */
+  targetJitterStddev: number;
+  /** Width noise scale relative to effectiveMaxX for serves. */
+  serveWidthNoiseScale: number;
+  /** Per-shot jitter stddev for serve target position (cm). */
+  serveJitterStddev: number;
 }
 
 export const DEFAULT_PLAYER_ENGINE_CONFIG: PlayerEngineConfig = {
@@ -127,6 +155,23 @@ export const DEFAULT_PLAYER_ENGINE_CONFIG: PlayerEngineConfig = {
   deceptionBaseScale: 0.5,
   deceptionRiskScale: 0.5,
   deceptionNoiseStddev: 0.05,
+
+  // Spin direction noise
+  topspinNoiseStddev: 0.1,
+  sidespinNoiseStddev: 0.7,
+  serveTopspinVariationScale: 0.5,
+  serveSidespinVariationScale: 0.3,
+
+  // Net clearance noise
+  netClearanceRiskReduction: 0.3,
+  shotClearanceNoiseStddev: 1.0,
+  serveClearanceNoiseStddev: 0.5,
+
+  // Target placement noise
+  targetWidthNoiseScale: 0.3,
+  targetJitterStddev: 3.0,
+  serveWidthNoiseScale: 0.5,
+  serveJitterStddev: 2.0,
 };
 
 /** Merge a partial config with defaults. */

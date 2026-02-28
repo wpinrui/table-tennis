@@ -82,11 +82,11 @@ export function decideShot(
   // --- Step 5: Spin Direction ---
   // topspinBias: 0=backspin dominant, 50=flat, 100=topspin dominant → [-1, 1]
   const topspinBase = (tendencies.topspinBias - 50) / 50;
-  const topspin = clamp(topspinBase + rng.gaussian(0, 0.1), -1, 1);
+  const topspin = clamp(topspinBase + rng.gaussian(0, config.topspinNoiseStddev), -1, 1);
 
   // sidespinUsage: magnitude with random direction per shot
   const sidespinMag = tendencies.sidespinUsage / 100;
-  const sidespin = clamp(sidespinMag * rng.gaussian(0, 0.7), -1, 1);
+  const sidespin = clamp(sidespinMag * rng.gaussian(0, config.sidespinNoiseStddev), -1, 1);
 
   // --- Step 6: Target Position ---
   const depthMapped = mapTendency(tendencies.depthBias, rng, config);
@@ -105,8 +105,8 @@ export function decideShot(
     config.minNetClearance +
     netClearanceBase * (config.maxNetClearance - config.minNetClearance);
   // Risk reduces clearance (aggressive players skim the net more)
-  netClearanceCm *= 1 - effectiveRisk * 0.3;
-  netClearanceCm += rng.gaussian(0, 1.0);
+  netClearanceCm *= 1 - effectiveRisk * config.netClearanceRiskReduction;
+  netClearanceCm += rng.gaussian(0, config.shotClearanceNoiseStddev);
   netClearanceCm = Math.max(config.minNetClearance, netClearanceCm);
 
   // --- Step 8: Deception Effort ---

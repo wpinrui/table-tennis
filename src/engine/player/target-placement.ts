@@ -50,12 +50,12 @@ export function computeTargetPosition(
   const oppX = opponentPosition.x;
   const targetSide = oppX >= 0 ? -1 : 1;
   const baseX = targetSide * maxX * config.opponentAvoidanceWeight;
-  const randomX = rng.gaussian(0, maxX * 0.3);
+  const randomX = rng.gaussian(0, maxX * config.targetWidthNoiseScale);
   let targetX = baseX + randomX;
 
   // Per-shot jitter
-  targetX += rng.gaussian(0, 3.0);
-  targetY += targetSign * rng.gaussian(0, 3.0);
+  targetX += rng.gaussian(0, config.targetJitterStddev);
+  targetY += targetSign * rng.gaussian(0, config.targetJitterStddev);
 
   // Clamp to valid table area on opponent's half
   targetX = clamp(targetX, -config.tableHalfWidth, config.tableHalfWidth);
@@ -96,11 +96,11 @@ export function computeServeTarget(
   const effectiveMaxX = Math.min(maxX, config.tableHalfWidth - effectiveMargin);
 
   // Random X placement within range
-  let targetX = rng.gaussian(0, effectiveMaxX * 0.5);
+  let targetX = rng.gaussian(0, effectiveMaxX * config.serveWidthNoiseScale);
 
   // Per-shot jitter
-  targetX += rng.gaussian(0, 2.0);
-  targetY += rng.gaussian(0, 2.0);
+  targetX += rng.gaussian(0, config.serveJitterStddev);
+  targetY += rng.gaussian(0, config.serveJitterStddev);
 
   // Clamp
   targetX = clamp(targetX, -config.tableHalfWidth, config.tableHalfWidth);
