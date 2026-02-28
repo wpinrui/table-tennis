@@ -106,6 +106,22 @@ export interface PlayerEngineConfig {
   serveWidthNoiseScale: number;
   /** Per-shot jitter stddev for serve target position (cm). */
   serveJitterStddev: number;
+
+  // --- Spin read ---
+  /** Scale factor for read difficulty (deception attribute × effort × scale). */
+  readDifficultyScale: number;
+  /** Base spin read accuracy floor (everyone can partially read spin). */
+  readAccuracyBase: number;
+  /** How much the spinRead attribute (0-100) adds to base accuracy. */
+  readAccuracySpinReadScale: number;
+  /** How much read difficulty reduces accuracy. */
+  readDifficultyPenalty: number;
+  /** Minimum read accuracy even in the worst case. */
+  minReadAccuracy: number;
+  /** Stddev scale for per-component Gaussian spin noise at max error. */
+  spinNoiseStddev: number;
+  /** Epsilon for zero-spin detection (avoids division by zero). */
+  spinMisreadEpsilon: number;
 }
 
 export const DEFAULT_PLAYER_ENGINE_CONFIG: PlayerEngineConfig = {
@@ -172,6 +188,15 @@ export const DEFAULT_PLAYER_ENGINE_CONFIG: PlayerEngineConfig = {
   targetJitterStddev: 3.0,
   serveWidthNoiseScale: 0.5,
   serveJitterStddev: 2.0,
+
+  // Spin read
+  readDifficultyScale: 1.2,
+  readAccuracyBase: 0.5,
+  readAccuracySpinReadScale: 0.5,
+  readDifficultyPenalty: 0.6,
+  minReadAccuracy: 0.05,
+  spinNoiseStddev: 0.4,
+  spinMisreadEpsilon: 0.001,
 };
 
 /** Merge a partial config with defaults. */

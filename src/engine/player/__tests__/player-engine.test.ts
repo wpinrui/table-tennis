@@ -12,6 +12,11 @@ import { computeTargetPosition, computeServeTarget } from "../target-placement.j
 import { decideShot } from "../shot-decision.js";
 import { decideServe } from "../serve-decision.js";
 import { DefaultPlayerEngine, createDefaultPlayerEngineFactory } from "../index.js";
+import {
+  computeReadDifficulty,
+  computeReadAccuracy,
+  computePerceivedSpin,
+} from "../spin-read.js";
 import type {
   Player,
   StrokeCapabilities,
@@ -23,6 +28,7 @@ import type {
   ShotContext,
   ServeContext,
   MatchState,
+  Vec3,
 } from "../../types/index.js";
 
 // ---------------------------------------------------------------------------
@@ -737,5 +743,206 @@ describe("DefaultPlayerEngine", () => {
 
     expect(attackerShot).toBeDefined();
     expect(chopperShot).toBeDefined();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Spin read & deception system tests
+// ---------------------------------------------------------------------------
+
+describe("computeReadDifficulty", () => {
+  it("zero deception produces zero difficulty regardless of effort", () => {
+    expect(computeReadDifficulty(0, 1.0, cfg)).toBe(0);
+    expect(computeReadDifficulty(0, 0.5, cfg)).toBe(0);
+  });
+
+  it("zero effort produces zero difficulty regardless of deception", () => {
+    expect(computeReadDifficulty(100, 0, cfg)).toBe(0);
+    expect(computeReadDifficulty(50, 0, cfg)).toBe(0);
+  });
+
+  it("max deception + max effort produces max difficulty", () => {
+    // 100/100 * 1.0 * 1.2 = 1.2 → clamped to 1.0
+    expect(computeReadDifficulty(100, 1.0, cfg)).toBe(1);
+  });
+
+  it("moderate values produce intermediate difficulty", () => {
+    // 50/100 * 0.5 * 1.2 = 0.3
+    const d = computeReadDifficulty(50, 0.5, cfg);
+    expect(d).toBeGreaterThan(0);
+    expect(d).toBeLessThan(1);
+    expect(d).toBeCloseTo(0.3);
+  });
+
+  it("output is always in [0, 1]", () => {
+    for (let dec = 0; dec <= 100; dec += 10) {
+      for (let eff = 0; eff <= 1; eff += 0.1) {
+        const d = computeReadDifficulty(dec, eff, cfg);
+        expect(d).toBeGreaterThanOrEqual(0);
+        expect(d).toBeLessThanOrEqual(1);
+      }
+    }
+  });
+});
+
+describe("computeReadAccuracy", () => {
+  it("perfect reader with no difficulty gets max accuracy", () => {
+    // base = 0.5 + 1.0*0.5 = 1.0, penalty = 0 → 1.0
+    expect(computeReadAccuracy(100, 0, cfg)).toBe(1);
+  });
+
+  it("perfect reader against max difficulty is reduced but not floored", () => {
+    // base = 1.0, penalty = 1.0 * 0.6 = 0.6 → 0.4
+    const acc = computeReadAccuracy(100, 1, cfg);
+    expect(acc).toBeCloseTo(0.4);
+    expect(acc).toBeGreaterThan(cfg.minReadAccuracy);
+  });
+
+  it("average reader with no difficulty gets moderate accuracy", () => {
+    // base = 0.5 + 0.5*0.5 = 0.75
+    expect(computeReadAccuracy(50, 0, cfg)).toBeCloseTo(0.75);
+  });
+
+  it("poor reader against max difficulty is clamped to minimum", () => {
+    // base = 0.5 + 0 = 0.5, penalty = 1.0 * 0.6 = 0.6 → -0.1 → clamped to 0.05
+    expect(computeReadAccuracy(0, 1, cfg)).toBe(cfg.minReadAccuracy);
+  });
+
+  it("output is always in [minReadAccuracy, 1]", () => {
+    for (let sr = 0; sr <= 100; sr += 10) {
+      for (let diff = 0; diff <= 1; diff += 0.1) {
+        const acc = computeReadAccuracy(sr, diff, cfg);
+        expect(acc).toBeGreaterThanOrEqual(cfg.minReadAccuracy);
+        expect(acc).toBeLessThanOrEqual(1);
+      }
+    }
+  });
+});
+
+describe("computePerceivedSpin", () => {
+  const HEAVY_TOPSPIN: Vec3 = { x: 0, y: 30, z: 0 };
+  const MIXED_SPIN: Vec3 = { x: 10, y: -20, z: 5 };
+  const ZERO_SPIN: Vec3 = { x: 0, y: 0, z: 0 };
+
+  it("zero spin is always read perfectly", () => {
+    const rng = makeRng();
+    const result = computePerceivedSpin(ZERO_SPIN, 0.5, rng, cfg);
+    expect(result.perceivedSpin).toEqual(ZERO_SPIN);
+    expect(result.misread).toBe(0);
+  });
+
+  it("perfect accuracy produces near-zero misread", () => {
+    let totalMisread = 0;
+    const n = 100;
+    for (let seed = 0; seed < n; seed++) {
+      const rng = makeRng(seed);
+      totalMisread += computePerceivedSpin(HEAVY_TOPSPIN, 1.0, rng, cfg).misread;
+    }
+    // With accuracy=1.0, errorFactor=0, noiseScale=0 → misread should be exactly 0
+    expect(totalMisread / n).toBe(0);
+  });
+
+  it("low accuracy produces significant misread on heavy spin", () => {
+    let totalMisread = 0;
+    const n = 200;
+    for (let seed = 0; seed < n; seed++) {
+      const rng = makeRng(seed);
+      totalMisread += computePerceivedSpin(HEAVY_TOPSPIN, 0.1, rng, cfg).misread;
+    }
+    // Low accuracy should produce noticeable misread on average
+    expect(totalMisread / n).toBeGreaterThan(0.1);
+  });
+
+  it("misread increases as accuracy decreases", () => {
+    let highAccMisread = 0;
+    let lowAccMisread = 0;
+    const n = 200;
+    for (let seed = 0; seed < n; seed++) {
+      const rng1 = makeRng(seed);
+      const rng2 = makeRng(seed);
+      highAccMisread += computePerceivedSpin(MIXED_SPIN, 0.9, rng1, cfg).misread;
+      lowAccMisread += computePerceivedSpin(MIXED_SPIN, 0.2, rng2, cfg).misread;
+    }
+    expect(lowAccMisread / n).toBeGreaterThan(highAccMisread / n);
+  });
+
+  it("misread is clamped to [0, 1]", () => {
+    for (let seed = 0; seed < 200; seed++) {
+      const rng = makeRng(seed);
+      const { misread } = computePerceivedSpin(HEAVY_TOPSPIN, 0.05, rng, cfg);
+      expect(misread).toBeGreaterThanOrEqual(0);
+      expect(misread).toBeLessThanOrEqual(1);
+    }
+  });
+
+  it("is deterministic with the same seed", () => {
+    const rng1 = makeRng(42);
+    const rng2 = makeRng(42);
+    const r1 = computePerceivedSpin(MIXED_SPIN, 0.5, rng1, cfg);
+    const r2 = computePerceivedSpin(MIXED_SPIN, 0.5, rng2, cfg);
+    expect(r1).toEqual(r2);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Full spin-read pipeline integration
+// ---------------------------------------------------------------------------
+
+describe("spin-read pipeline", () => {
+  it("high deception sender vs poor reader → high misread", () => {
+    let totalMisread = 0;
+    const n = 200;
+    const spin: Vec3 = { x: 5, y: -25, z: 3 };
+
+    for (let seed = 0; seed < n; seed++) {
+      const rng = makeRng(seed);
+      const difficulty = computeReadDifficulty(90, 0.8, cfg);
+      const accuracy = computeReadAccuracy(20, difficulty, cfg);
+      totalMisread += computePerceivedSpin(spin, accuracy, rng, cfg).misread;
+    }
+
+    expect(totalMisread / n).toBeGreaterThan(0.15);
+  });
+
+  it("low deception sender vs good reader → low misread", () => {
+    let totalMisread = 0;
+    const n = 200;
+    const spin: Vec3 = { x: 5, y: -25, z: 3 };
+
+    for (let seed = 0; seed < n; seed++) {
+      const rng = makeRng(seed);
+      const difficulty = computeReadDifficulty(20, 0.2, cfg);
+      const accuracy = computeReadAccuracy(90, difficulty, cfg);
+      totalMisread += computePerceivedSpin(spin, accuracy, rng, cfg).misread;
+    }
+
+    expect(totalMisread / n).toBeLessThan(0.1);
+  });
+
+  it("attacker deception vs chopper spinRead produces moderate misread", () => {
+    let totalMisread = 0;
+    const n = 200;
+    const spin: Vec3 = { x: 0, y: 20, z: 0 };
+
+    for (let seed = 0; seed < n; seed++) {
+      const rng = makeRng(seed);
+      // Attacker deception=70, effort~0.5; Chopper spinRead=85
+      const difficulty = computeReadDifficulty(
+        ATTACKER_ATTRIBUTES.deception,
+        0.5,
+        cfg,
+      );
+      const accuracy = computeReadAccuracy(
+        CHOPPER_ATTRIBUTES.spinRead,
+        difficulty,
+        cfg,
+      );
+      totalMisread += computePerceivedSpin(spin, accuracy, rng, cfg).misread;
+    }
+
+    // Good reader against moderate deception → low-to-moderate misread
+    const avg = totalMisread / n;
+    expect(avg).toBeGreaterThan(0);
+    expect(avg).toBeLessThan(0.3);
   });
 });
