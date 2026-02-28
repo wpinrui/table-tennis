@@ -1,20 +1,11 @@
 /** Playing hand — affects serve angles, forehand/backhand coverage, and cross-court dynamics. */
 export type Handedness = "left" | "right";
 
+/** Which side of the paddle the player uses for a stroke. */
+export type StrokeSide = "forehand" | "backhand";
+
 /** Rubber surface type. Fundamentally changes viable shots and ball behavior. */
 export type RubberType = "inverted" | "shortPips" | "longPips" | "antispin";
-
-/** Rally shot types available during play. */
-export type ShotType =
-  | "topspinLoop"
-  | "push"
-  | "block"
-  | "smash"
-  | "chop"
-  | "flick";
-
-/** All shot types that can appear in simulation output (rally shots + serve). */
-export type AnyShotType = ShotType | "serve";
 
 /**
  * Global player attributes affecting all shots and overall play.
@@ -62,34 +53,50 @@ export interface Equipment {
 }
 
 /**
- * Min/max spin magnitude for a shot type.
- * Wide range = varied (deceptive with high deception stat).
- * Narrow range = predictable.
+ * Physical ceilings for one side of the paddle (forehand or backhand).
+ * The closer a player pushes toward these ceilings, the higher the risk
+ * of execution error. Equipment modifies effective ceilings at runtime.
  */
-export interface SpinRange {
-  /** Minimum spin magnitude (0-100). */
-  min: number;
-  /** Maximum spin magnitude (0-100). Must be >= min. */
-  max: number;
-}
-
-/** Skill ratings for a specific shot type. Scale: 0-100. */
-export interface ShotRatings {
-  /** Maximum power the player can generate on this shot. */
-  power: number;
-  /** Range of spin magnitude the player can apply. */
-  spinRange: SpinRange;
-  /** Placement accuracy. Determines Gaussian error width around intended target. */
+export interface SideCapabilities {
+  /** Maximum power this side can generate (0-100). */
+  powerCeiling: number;
+  /** Maximum spin this side can generate (0-100). */
+  spinCeiling: number;
+  /** Base placement accuracy at comfortable effort (0-100). */
   accuracy: number;
-  /** Shot-to-shot reliability. Low = occasional shanks even in ideal conditions. */
+  /** Shot-to-shot reliability (0-100). Low = occasional shanks even in ideal conditions. */
   consistency: number;
 }
 
-/** Shot preference weights — the player's playstyle DNA. Base values adjusted mid-match by adaptability. */
-export type ShotPreferences = Record<ShotType, number>;
+/** Per-side stroke capabilities. */
+export interface StrokeCapabilities {
+  forehand: SideCapabilities;
+  backhand: SideCapabilities;
+}
 
-/** Shot repertoire — skill ratings per shot type. */
-export type ShotRepertoire = Record<ShotType, ShotRatings>;
+/**
+ * Stroke tendencies — the player's playstyle DNA for rally shots.
+ * These are BASE values consumed by the default player engine.
+ * The engine adjusts them mid-match based on adaptability.
+ * Custom player engines may interpret or ignore these.
+ * All values 0-100.
+ */
+export interface StrokeTendencies {
+  /** How hard they typically hit (0 = soft touch, 100 = full power). */
+  powerBias: number;
+  /** How much spin they typically apply (0 = flat, 100 = heavy spin). */
+  spinIntensity: number;
+  /** Spin direction bias (0 = backspin dominant, 50 = flat/mixed, 100 = topspin dominant). */
+  topspinBias: number;
+  /** How much sidespin mixed into shots (0 = none, 100 = heavy). */
+  sidespinUsage: number;
+  /** Shot depth preference (0 = short game near net, 100 = deep driving game). */
+  depthBias: number;
+  /** Trajectory height preference (0 = net-skimming, 100 = high arc). */
+  netClearance: number;
+  /** Willingness to push toward ceilings and aim for lines (0 = conservative, 100 = gambler). */
+  riskTolerance: number;
+}
 
 /**
  * Serve tendency profile. Continuous physical tendencies that define what kinds
@@ -125,14 +132,20 @@ export interface Player {
   handedness: Handedness;
   /** Starting ELO rating. Optional — unrated players are seeded last. */
   elo?: number;
+  /**
+   * Which decision engine to use for this player. Defaults to "default".
+   * The default engine uses strokeTendencies + serveTendencies + attributes.
+   * Custom engines may interpret player data differently.
+   */
+  decisionEngine?: string;
   /** Global attributes affecting all play. */
   attributes: PlayerAttributes;
   /** Paddle equipment. */
   equipment: Equipment;
-  /** Shot preference weights (playstyle DNA). Base values adjusted mid-match. */
-  preferences: ShotPreferences;
-  /** Rally shot skill ratings. */
-  shots: ShotRepertoire;
+  /** Per-side stroke ceilings (forehand/backhand). Equipment rubber maps to the corresponding side. */
+  strokeCapabilities: StrokeCapabilities;
+  /** Rally shot style tendencies. Base values adjusted mid-match by the player engine. */
+  strokeTendencies: StrokeTendencies;
   /** Serve tendency profile. */
   serveTendencies: ServeTendencies;
   /** Optional badges (designed but not active in Phase 1). */

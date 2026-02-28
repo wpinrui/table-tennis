@@ -1,4 +1,4 @@
-import type { AnyShotType } from "./player";
+import type { StrokeSide } from "./player";
 
 /** 3D vector in cm. Origin at table center. X=width, Y=length, Z=height (table=0). */
 export interface Vec3 {
@@ -27,21 +27,29 @@ export interface BallTrajectory {
   landingPosition: Vec3;
 }
 
-/** How a point ended. */
+/**
+ * How a point ended.
+ * Net touches and edge contacts during rallies are physics events (trajectory
+ * deflections), not point outcomes — the rally simply continues with the
+ * altered ball. The only net special case is a serve let (replay), which
+ * is handled by the umpire and never produces a point outcome.
+ */
 export type PointOutcomeReason =
   | "unreturnable"
   | "unforcedError"
   | "offTable"
-  | "intoNet"
-  | "edgeBall"
-  | "netLet";
+  | "intoNet";
 
 /** A single shot in a rally. */
 export interface Shot {
   /** Player who hit this shot. */
   player: string;
-  /** Shot or serve type used. */
-  shotType: AnyShotType;
+  /**
+   * Which side of the paddle was used, or "serve" for the first shot.
+   * Named shot types (loop, chop, etc.) are not tracked — shots are
+   * described entirely by their physical properties in ballTrajectory.
+   */
+  side: StrokeSide | "serve";
   /** Ball flight data. */
   ballTrajectory: BallTrajectory;
   /** Both players' court positions when this shot was hit. */
@@ -67,7 +75,7 @@ export interface Point {
   server: string;
   /** Score in the current game BEFORE this point was played. */
   scoreBefore: Score;
-  /** Full rally — every shot from serve to point end. First shot is always the serve (shotType: "serve"). */
+  /** Full rally — every shot from serve to point end. First shot is always the serve (side: "serve"). */
   shots: Shot[];
   /** How the point ended. */
   outcome: {
@@ -91,8 +99,6 @@ export interface MatchPlayerStats {
   avgRallyLength: number;
   unforcedErrors: number;
   winners: number;
-  /** Count of each shot type used (e.g., { topspinLoop: 45, push: 30 }). */
-  shotTypeDistribution: Record<string, number>;
 }
 
 /** A complete match between two players. */

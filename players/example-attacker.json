@@ -27,51 +27,28 @@
       "control": 72
     }
   },
-  "preferences": {
-    "topspinLoop": 0.45,
-    "push": 0.06,
-    "block": 0.12,
-    "smash": 0.20,
-    "chop": 0.02,
-    "flick": 0.15
-  },
-  "shots": {
-    "topspinLoop": {
-      "power": 88,
-      "spinRange": { "min": 55, "max": 92 },
+  "strokeCapabilities": {
+    "forehand": {
+      "powerCeiling": 90,
+      "spinCeiling": 88,
       "accuracy": 78,
       "consistency": 80
     },
-    "push": {
-      "power": 30,
-      "spinRange": { "min": 20, "max": 45 },
-      "accuracy": 65,
-      "consistency": 70
-    },
-    "block": {
-      "power": 45,
-      "spinRange": { "min": 10, "max": 30 },
+    "backhand": {
+      "powerCeiling": 78,
+      "spinCeiling": 80,
       "accuracy": 72,
       "consistency": 75
-    },
-    "smash": {
-      "power": 92,
-      "spinRange": { "min": 5, "max": 20 },
-      "accuracy": 70,
-      "consistency": 65
-    },
-    "chop": {
-      "power": 25,
-      "spinRange": { "min": 15, "max": 35 },
-      "accuracy": 45,
-      "consistency": 40
-    },
-    "flick": {
-      "power": 72,
-      "spinRange": { "min": 30, "max": 65 },
-      "accuracy": 75,
-      "consistency": 72
     }
+  },
+  "strokeTendencies": {
+    "powerBias": 72,
+    "spinIntensity": 75,
+    "topspinBias": 82,
+    "sidespinUsage": 30,
+    "depthBias": 70,
+    "netClearance": 30,
+    "riskTolerance": 65
   },
   "serveTendencies": {
     "length": 60,

@@ -1,15 +1,13 @@
 export type {
   Handedness,
   RubberType,
-  ShotType,
-  AnyShotType,
+  StrokeSide,
   PlayerAttributes,
   Rubber,
   Equipment,
-  SpinRange,
-  ShotRatings,
-  ShotPreferences,
-  ShotRepertoire,
+  SideCapabilities,
+  StrokeCapabilities,
+  StrokeTendencies,
   ServeTendencies,
   Player,
 } from "./player";
@@ -37,6 +35,24 @@ export type {
   Standing,
   TournamentResults,
 } from "./results";
+
+export type {
+  ArrivalState,
+  ShotContext,
+  ServeContext,
+  ShotIntention,
+  ServeIntention,
+  BallFlight,
+  ServeRuling,
+  ShotRuling,
+  MatchState,
+  RecordedShot,
+  PointSummary,
+  PlayerEngine,
+  PhysicsEngine,
+  UmpireEngine,
+  PlayerEngineFactory,
+} from "./decision";
 
 export type {
   EloHistoryEntry,

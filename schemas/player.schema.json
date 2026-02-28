@@ -2,9 +2,9 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://github.com/wpinrui/table-tennis/schemas/player.schema.json",
   "title": "Player",
-  "description": "A table tennis player with skill attributes, equipment, shot repertoire, serve tendencies, and playstyle preferences. Each player is a separate JSON file in the /players/ folder. Files can be hand-authored or AI-generated.",
+  "description": "A table tennis player with skill attributes, equipment, per-side stroke capabilities, stroke/serve tendencies, and an optional custom decision engine. Each player is a separate JSON file in the /players/ folder. Files can be hand-authored or AI-generated.",
   "type": "object",
-  "required": ["name", "handedness", "attributes", "equipment", "preferences", "shots", "serveTendencies"],
+  "required": ["name", "handedness", "attributes", "equipment", "strokeCapabilities", "strokeTendencies", "serveTendencies"],
   "additionalProperties": false,
   "properties": {
     "name": {
@@ -21,6 +21,11 @@
       "type": "integer",
       "minimum": 0,
       "description": "Starting ELO rating. Optional — players without ELO are seeded last (randomly) in tournaments. Once the ELO ledger exists, the ledger value takes precedence over this field."
+    },
+    "decisionEngine": {
+      "type": "string",
+      "description": "Which player engine implementation to use for this player. Defaults to 'default'. The default engine uses strokeTendencies + serveTendencies + attributes to make decisions. Custom engines may interpret player data differently or ignore some fields entirely.",
+      "default": "default"
     },
     "attributes": {
       "type": "object",
@@ -44,19 +49,19 @@
           "type": "integer",
           "minimum": 0,
           "maximum": 100,
-          "description": "Accuracy of reading incoming spin (direction and magnitude). Defensive skill. Low = novice-level misreads (might mistake backspin for topspin). High = pro-level reads (correctly identifies spin type and weight). The receiver's shot selection and execution are based on perceived spin, not actual spin."
+          "description": "Accuracy of reading incoming spin (direction and magnitude). Defensive skill. Low = novice-level misreads (might mistake backspin for topspin). High = pro-level reads (correctly identifies spin type and weight). The receiver's decisions and execution are based on perceived spin, not actual spin."
         },
         "deception": {
           "type": "integer",
           "minimum": 0,
           "maximum": 100,
-          "description": "Ability to disguise spin (same arm motion for different spins). Offensive skill. High = opponents can't tell what spin was applied. Interacts with spin range: wide range + high deception is devastating, wide range + low deception is readable, narrow range + high deception gains little."
+          "description": "Ability to disguise spin (same arm motion for different spins). Offensive skill. High = opponents can't tell what spin was applied. Interacts with spin variation: wide variation + high deception is devastating, wide variation + low deception is readable."
         },
         "stamina": {
           "type": "integer",
           "minimum": 0,
           "maximum": 100,
-          "description": "Resistance to fatigue over long matches. As stamina depletes, all shot attributes (power, spin, accuracy, consistency) degrade subtly. High stamina = maintains peak performance deeper into matches."
+          "description": "Resistance to fatigue over long matches. As stamina depletes, all physical capabilities degrade subtly. High stamina = maintains peak performance deeper into matches."
         },
         "mental": {
           "type": "integer",
@@ -68,19 +73,19 @@
           "type": "integer",
           "minimum": 0,
           "maximum": 100,
-          "description": "Serve execution skill. Determines how closely the actual serve matches the player's intended serve properties (speed, spin, placement). Low = large error between intent and result. High = precise execution. Also inherently makes serves harder to read — a skilled server can place the ball tighter to the net/edges and generate more extreme spin."
+          "description": "Serve execution skill. Determines how closely the actual serve matches the player's intended serve properties (speed, spin, placement). Also inherently makes serves harder to read — a skilled server can place the ball tighter to the net/edges and generate more extreme spin."
         },
         "adaptability": {
           "type": "integer",
           "minimum": 0,
           "maximum": 100,
-          "description": "How quickly the player adjusts tactics mid-match based on what's working or failing. High = reads the game well and shifts tendencies quickly (e.g., stops serving long after opponent keeps attacking them). Low = stubbornly sticks to their game plan even when it's failing. Affects both serve tendencies and shot preferences during a match."
+          "description": "How quickly the player adjusts tactics mid-match based on what's working or failing. High = reads the game well and shifts tendencies quickly. Low = stubbornly sticks to their game plan even when it's failing. Affects both stroke and serve tendencies during a match."
         }
       }
     },
     "equipment": {
       "type": "object",
-      "description": "Paddle equipment configuration. Rubber type fundamentally changes viable shots and ball behavior.",
+      "description": "Paddle equipment configuration. Forehand/backhand rubber maps to the corresponding side in strokeCapabilities. Rubber type fundamentally changes viable shots and ball behavior.",
       "required": ["blade", "forehandRubber", "backhandRubber"],
       "additionalProperties": false,
       "properties": {
@@ -108,67 +113,75 @@
         }
       }
     },
-    "preferences": {
+    "strokeCapabilities": {
       "type": "object",
-      "description": "Shot preference weights defining the player's playstyle DNA. Each value is a relative weight (0 to 1) indicating how often the player gravitates toward that shot type when they have a free choice. Weights do NOT need to sum to 1 — they are normalized at runtime. These are BASE values — during a match, the engine adjusts them based on what's working/failing (rate of adjustment driven by adaptability attribute). A chopper might have chop: 0.50, push: 0.20. An attacker might have topspinLoop: 0.45, smash: 0.20.",
-      "required": ["topspinLoop", "push", "block", "smash", "chop", "flick"],
+      "description": "Physical ceilings for each side (forehand/backhand). The closer a player pushes toward these ceilings in a shot, the higher the risk of execution error. Equipment rubber modifies effective ceilings at runtime.",
+      "required": ["forehand", "backhand"],
       "additionalProperties": false,
       "properties": {
-        "topspinLoop": {
-          "type": "number",
-          "minimum": 0,
-          "maximum": 1,
-          "description": "Preference weight for topspin loop attacks."
+        "forehand": {
+          "$ref": "#/$defs/sideCapabilities",
+          "description": "Forehand side physical ceilings. Combined with forehandRubber at runtime."
         },
-        "push": {
-          "type": "number",
-          "minimum": 0,
-          "maximum": 1,
-          "description": "Preference weight for push (controlled backspin return)."
-        },
-        "block": {
-          "type": "number",
-          "minimum": 0,
-          "maximum": 1,
-          "description": "Preference weight for blocking (absorbing opponent's power)."
-        },
-        "smash": {
-          "type": "number",
-          "minimum": 0,
-          "maximum": 1,
-          "description": "Preference weight for smash (flat, high-speed kill shot)."
-        },
-        "chop": {
-          "type": "number",
-          "minimum": 0,
-          "maximum": 1,
-          "description": "Preference weight for chop (heavy backspin, usually from mid-distance)."
-        },
-        "flick": {
-          "type": "number",
-          "minimum": 0,
-          "maximum": 1,
-          "description": "Preference weight for flick (wrist snap over short balls)."
+        "backhand": {
+          "$ref": "#/$defs/sideCapabilities",
+          "description": "Backhand side physical ceilings. Combined with backhandRubber at runtime."
         }
       }
     },
-    "shots": {
+    "strokeTendencies": {
       "type": "object",
-      "description": "Shot repertoire. Each shot type has skill ratings that determine quality when executed. Not every player needs high ratings in every shot — gaps in the repertoire are realistic and create exploitable weaknesses.",
-      "required": ["topspinLoop", "push", "block", "smash", "chop", "flick"],
+      "description": "Playstyle DNA for rally shots. Continuous tendencies (0-100) that describe what the player TRIES to do. No named shot types — shots are defined by physical properties, and labels like 'loop' or 'chop' emerge naturally from the combination of tendencies. These are BASE values consumed by the default player engine; the engine adjusts them mid-match based on adaptability. Custom player engines may interpret or ignore these.",
+      "required": ["powerBias", "spinIntensity", "topspinBias", "sidespinUsage", "depthBias", "netClearance", "riskTolerance"],
       "additionalProperties": false,
       "properties": {
-        "topspinLoop": { "$ref": "#/$defs/shotRatings", "description": "Topspin loop — the primary attacking shot. Heavy topspin, medium-to-high speed, arcing trajectory that dips onto the table." },
-        "push": { "$ref": "#/$defs/shotRatings", "description": "Push — controlled backspin return, usually short and low. Used to keep the ball tight and prevent attacks." },
-        "block": { "$ref": "#/$defs/shotRatings", "description": "Block — compact stroke absorbing the opponent's power. Redirects the ball with minimal backswing. Essential for close-to-table defense." },
-        "smash": { "$ref": "#/$defs/shotRatings", "description": "Smash — flat, maximum-speed kill shot against high balls. Minimal spin, maximum power. High risk/reward." },
-        "chop": { "$ref": "#/$defs/shotRatings", "description": "Chop — heavy backspin stroke, usually from mid-to-far distance. The signature shot of defensive players. Varied spin range makes choppers dangerous." },
-        "flick": { "$ref": "#/$defs/shotRatings", "description": "Flick — wrist-snap attack over short balls that can't be looped. Requires good timing and touch. Key for attacking short serves." }
+        "powerBias": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 100,
+          "description": "How hard the player typically hits (0 = soft touch, 100 = full power). Low = control-oriented play, high = aggressive attacking."
+        },
+        "spinIntensity": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 100,
+          "description": "How much spin the player typically applies (0 = flat hitting, 100 = heavy spin on every shot). High values combined with high spinCeiling = heavy spin player."
+        },
+        "topspinBias": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 100,
+          "description": "Spin direction bias (0 = backspin dominant, 50 = flat/mixed, 100 = topspin dominant). A chopper sits around 15-25; a looper sits around 75-90."
+        },
+        "sidespinUsage": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 100,
+          "description": "How much sidespin is mixed into rally shots (0 = pure top/backspin, 100 = heavy sidespin on every shot). Most players are low (10-30); specialist styles may go higher."
+        },
+        "depthBias": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 100,
+          "description": "Shot depth preference (0 = short game near the net, 100 = deep driving game). Short game is safer but gives less pressure; deep game pushes opponent back."
+        },
+        "netClearance": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 100,
+          "description": "Trajectory height preference (0 = net-skimming, 100 = high arc). Low = aggressive/risky (might clip net), high = safe but attackable (opponent gets a high ball). Choppers tend high; drivers tend low."
+        },
+        "riskTolerance": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 100,
+          "description": "Overall willingness to push toward ceilings and aim for lines (0 = conservative, always plays safe, 100 = gambler, always goes for the corner). Low risk = safe placement + comfortable effort = easy ball for opponent. High risk = tight placement + max effort = either a winner or an error."
+        }
       }
     },
     "serveTendencies": {
       "type": "object",
-      "description": "Serve tendency profile. Instead of named serve types, serves are defined by continuous physical tendencies. The engine samples from these tendencies to generate each serve's intended properties, then applies error based on the service attribute. These are BASE values — the engine adjusts them mid-match based on adaptability. In a future human-player mode, the human can override these directly.",
+      "description": "Serve tendency profile. Continuous physical tendencies (0-100) that define what kinds of serves the player attempts. The engine samples from these to generate each serve's intended properties, then applies error based on the service attribute. Base values adjusted mid-match by adaptability.",
       "required": ["length", "speed", "spinAmount", "spinVariation", "backspinBias", "sidespinBias", "risk"],
       "additionalProperties": false,
       "properties": {
@@ -194,25 +207,25 @@
           "type": "integer",
           "minimum": 0,
           "maximum": 100,
-          "description": "How much the spin direction and magnitude changes serve-to-serve. 0 = same spin every time (predictable, easy to read after a few serves). 100 = wildly varied (hard to read, but requires high service skill to control). Interacts with deception — high variation + high deception is devastating."
+          "description": "How much the spin direction and magnitude changes serve-to-serve. 0 = same spin every time (predictable). 100 = wildly varied (hard to read, requires high service skill to control). Interacts with deception."
         },
         "backspinBias": {
           "type": "integer",
           "minimum": 0,
           "maximum": 100,
-          "description": "Tendency toward backspin vs topspin. 0 = pure topspin serves. 50 = equal mix. 100 = pure backspin serves. Most defensive players lean high; attackers lean lower."
+          "description": "Tendency toward backspin vs topspin. 0 = pure topspin serves. 50 = equal mix. 100 = pure backspin serves."
         },
         "sidespinBias": {
           "type": "integer",
           "minimum": 0,
           "maximum": 100,
-          "description": "How much sidespin is added to serves. 0 = no sidespin (pure top/backspin). 100 = heavy sidespin on every serve. Sidespin makes serves curve and is harder to read when combined with top/backspin variation."
+          "description": "How much sidespin is added to serves. 0 = no sidespin. 100 = heavy sidespin on every serve."
         },
         "risk": {
           "type": "integer",
           "minimum": 0,
           "maximum": 100,
-          "description": "Serve aggression. 0 = safe serves (comfortable margins from net and edges, low fault rate). 100 = aggressive serves (tight to the net, close to edges, more aces but more faults). Interacts with service attribute — high risk + low service = many faults."
+          "description": "Serve aggression. 0 = safe serves (comfortable margins from net and edges). 100 = aggressive serves (tight to the net, close to edges, more aces but more faults)."
         }
       }
     },
@@ -259,49 +272,35 @@
         }
       }
     },
-    "shotRatings": {
+    "sideCapabilities": {
       "type": "object",
-      "description": "Skill ratings for a specific shot type. Scale: 0 (no ability) to 100 (theoretical human peak).",
-      "required": ["power", "spinRange", "accuracy", "consistency"],
+      "description": "Physical ceilings for one side of the paddle (forehand or backhand). Scale: 0 (no ability) to 100 (theoretical human peak). The closer a player's intention is to these ceilings, the higher the execution risk.",
+      "required": ["powerCeiling", "spinCeiling", "accuracy", "consistency"],
       "additionalProperties": false,
       "properties": {
-        "power": {
+        "powerCeiling": {
           "type": "integer",
           "minimum": 0,
           "maximum": 100,
-          "description": "Maximum power the player can generate on this shot. Subject to degradation from poor positioning, time pressure, and fatigue."
+          "description": "Maximum power this side can generate. Equipment (blade speed + rubber speed) modifies the effective ceiling at runtime."
         },
-        "spinRange": {
-          "type": "object",
-          "description": "The range of spin magnitude the player can apply on this shot. Min/max define the bounds — actual spin per shot is sampled from this range. Wide range = varied (deceptive with high deception stat). Narrow range = predictable.",
-          "required": ["min", "max"],
-          "additionalProperties": false,
-          "properties": {
-            "min": {
-              "type": "integer",
-              "minimum": 0,
-              "maximum": 100,
-              "description": "Minimum spin magnitude the player puts on this shot type."
-            },
-            "max": {
-              "type": "integer",
-              "minimum": 0,
-              "maximum": 100,
-              "description": "Maximum spin magnitude the player puts on this shot type. Must be >= min."
-            }
-          }
+        "spinCeiling": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 100,
+          "description": "Maximum spin this side can generate. Equipment (rubber spin + rubber type) modifies the effective ceiling at runtime."
         },
         "accuracy": {
           "type": "integer",
           "minimum": 0,
           "maximum": 100,
-          "description": "Placement accuracy. Determines the width of the Gaussian error distribution around the intended target. High accuracy = tight grouping. Low accuracy = shots land far from intended target."
+          "description": "Base placement accuracy at comfortable effort. Determines the width of the Gaussian error distribution around the intended target. Degrades as the player pushes toward ceilings or plays under duress."
         },
         "consistency": {
           "type": "integer",
           "minimum": 0,
           "maximum": 100,
-          "description": "Shot-to-shot reliability. How often the player executes this shot at their skill level vs making an error. Low consistency = occasional shanks and mishits even in ideal conditions."
+          "description": "Shot-to-shot reliability. How often the player executes at their skill level vs making an error. Low = occasional shanks and mishits even in ideal conditions."
         }
       }
     }

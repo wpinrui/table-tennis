@@ -99,17 +99,18 @@
     },
     "shot": {
       "type": "object",
-      "description": "A single shot in a rally. Records the player, shot type, full ball trajectory, both players' positions, and execution quality.",
-      "required": ["player", "shotType", "ballTrajectory", "playerPositions", "executionQuality"],
+      "description": "A single shot in a rally. Records the player, which paddle side was used, full ball trajectory, both players' positions, and execution quality. Named shot types (loop, chop, etc.) are not tracked — shots are described entirely by their physical properties.",
+      "required": ["player", "side", "ballTrajectory", "playerPositions", "executionQuality"],
       "additionalProperties": false,
       "properties": {
         "player": {
           "type": "string",
           "description": "Name of the player who hit this shot."
         },
-        "shotType": {
+        "side": {
           "type": "string",
-          "description": "The shot type used. One of the rally shot types (topspinLoop, push, block, smash, chop, flick) or 'serve' for the first shot of each point. Serve physical properties are captured in the ballTrajectory."
+          "enum": ["forehand", "backhand", "serve"],
+          "description": "Which side of the paddle was used, or 'serve' for the first shot of each point. The serve's physical properties are captured in the ballTrajectory."
         },
         "ballTrajectory": {
           "type": "object",
@@ -153,13 +154,13 @@
           "type": "number",
           "minimum": 0,
           "maximum": 1,
-          "description": "How well the shot was executed relative to the player's peak ability (0 = worst possible, 1 = perfect execution). Degraded by positional deficit, time pressure, spin misread, and stamina."
+          "description": "How well the shot was executed relative to the player's peak ability (0 = worst possible, 1 = perfect execution). Degraded by positional deficit, time pressure, spin misread, stamina, and risk taken."
         }
       }
     },
     "point": {
       "type": "object",
-      "description": "A single point in a match. Contains the serve, full shot sequence (rally), and outcome.",
+      "description": "A single point in a match. Contains the serve, full shot sequence (rally), and outcome. Serve lets (net touch + valid landing) result in a replay and do not appear as points.",
       "required": ["gameNumber", "server", "scoreBefore", "shots", "outcome"],
       "additionalProperties": false,
       "properties": {
@@ -186,11 +187,11 @@
           "type": "array",
           "items": { "$ref": "#/$defs/shot" },
           "minItems": 1,
-          "description": "The full rally — every shot from serve to point end. First shot is always the serve (shotType: 'serve'). The serve's physical properties (speed, spin, placement) are captured in its ballTrajectory."
+          "description": "The full rally — every shot from serve to point end. First shot is always the serve (side: 'serve')."
         },
         "outcome": {
           "type": "object",
-          "description": "How the point ended.",
+          "description": "How the point ended. Net touches and edge contacts during rallies are physics events (trajectory deflections), not point outcomes.",
           "required": ["winner", "reason"],
           "additionalProperties": false,
           "properties": {
@@ -200,8 +201,8 @@
             },
             "reason": {
               "type": "string",
-              "enum": ["unreturnable", "unforcedError", "offTable", "intoNet", "edgeBall", "netLet"],
-              "description": "How the point was won. unreturnable = winner hit a shot the opponent couldn't reach. unforcedError = loser made an error on a playable ball. offTable = ball went off the table. intoNet = ball hit the net and didn't go over. edgeBall = ball clipped the edge of the table (point to hitter). netLet = ball clipped the top of the net and dropped over (point to hitter)."
+              "enum": ["unreturnable", "unforcedError", "offTable", "intoNet"],
+              "description": "How the point was won. unreturnable = winner hit a shot the opponent couldn't reach (includes aces and double-bounces). unforcedError = loser made an error on a playable ball. offTable = ball went off the table. intoNet = ball hit the net and didn't go over."
             }
           }
         }
@@ -219,18 +220,13 @@
         "pointsWonOnReturn": { "type": "integer", "minimum": 0, "description": "Points won when receiving." },
         "avgRallyLength": { "type": "number", "minimum": 0, "description": "Average number of shots per rally." },
         "unforcedErrors": { "type": "integer", "minimum": 0, "description": "Points lost due to own errors on playable balls." },
-        "winners": { "type": "integer", "minimum": 0, "description": "Points won with unreturnable shots." },
-        "shotTypeDistribution": {
-          "type": "object",
-          "additionalProperties": { "type": "integer", "minimum": 0 },
-          "description": "Count of each shot type used (e.g., { topspinLoop: 45, push: 30, ... })."
-        }
+        "winners": { "type": "integer", "minimum": 0, "description": "Points won with unreturnable shots." }
       }
     },
     "match": {
       "type": "object",
       "description": "A complete match between two players.",
-      "required": ["matchId", "round", "player1", "player2", "score", "games", "points", "stats"],
+      "required": ["matchId", "round", "player1", "player2", "winner", "score", "games", "points", "stats"],
       "additionalProperties": false,
       "properties": {
         "matchId": {
@@ -280,7 +276,7 @@
         "points": {
           "type": "array",
           "items": { "$ref": "#/$defs/point" },
-          "description": "Every point played in the match, in order."
+          "description": "Every point played in the match, in order. Serve lets (replays) are not recorded as points."
         },
         "stats": {
           "type": "object",
