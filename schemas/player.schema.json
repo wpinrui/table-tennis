@@ -4,7 +4,7 @@
   "title": "Player",
   "description": "A table tennis player with skill attributes, equipment, shot repertoire, and playstyle preferences. Each player is a separate JSON file in the /players/ folder. Files can be hand-authored or AI-generated.",
   "type": "object",
-  "required": ["name", "handedness", "attributes", "equipment", "preferences", "shots", "serves"],
+  "required": ["name", "handedness", "attributes", "equipment", "preferences", "servePreferences", "shots", "serves"],
   "additionalProperties": false,
   "properties": {
     "name": {
@@ -137,6 +137,44 @@
           "minimum": 0,
           "maximum": 1,
           "description": "Preference weight for flick (wrist snap over short balls)."
+        }
+      }
+    },
+    "servePreferences": {
+      "type": "object",
+      "description": "Serve preference weights defining which serves the player favors. Same concept as shot preferences but for serve selection. Weights do NOT need to sum to 1 — they are normalized at runtime. Situational modifiers may adjust these at runtime (e.g., a player with high mental may favor their best serve at match point).",
+      "required": ["shortBackspin", "longTopspin", "pendulum", "reversePendulum", "tomahawk"],
+      "additionalProperties": false,
+      "properties": {
+        "shortBackspin": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "description": "Preference weight for short backspin serve (the safe option)."
+        },
+        "longTopspin": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "description": "Preference weight for long topspin serve (aggressive, rushes opponent)."
+        },
+        "pendulum": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "description": "Preference weight for pendulum serve (most common deceptive serve)."
+        },
+        "reversePendulum": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "description": "Preference weight for reverse pendulum serve (contrast to pendulum)."
+        },
+        "tomahawk": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "description": "Preference weight for tomahawk serve (heavy sidespin, distinctive)."
         }
       }
     },

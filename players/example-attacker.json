@@ -33,6 +33,13 @@
     "chop": 0.02,
     "flick": 0.15
   },
+  "servePreferences": {
+    "shortBackspin": 0.15,
+    "longTopspin": 0.20,
+    "pendulum": 0.35,
+    "reversePendulum": 0.15,
+    "tomahawk": 0.15
+  },
   "shots": {
     "topspinLoop": {
       "power": 88,

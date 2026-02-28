@@ -92,6 +92,9 @@ export interface ShotRatings {
 /** Shot preference weights — the player's playstyle DNA. */
 export type ShotPreferences = Record<ShotType, number>;
 
+/** Serve preference weights — which serves the player favors. */
+export type ServePreferences = Record<ServeType, number>;
+
 /** Shot repertoire — skill ratings per shot type. */
 export type ShotRepertoire = Record<ShotType, ShotRatings>;
 
@@ -115,6 +118,8 @@ export interface Player {
   equipment: Equipment;
   /** Shot preference weights (playstyle DNA). Normalized at runtime. */
   preferences: ShotPreferences;
+  /** Serve preference weights. Normalized at runtime. */
+  servePreferences: ServePreferences;
   /** Rally shot skill ratings. */
   shots: ShotRepertoire;
   /** Serve skill ratings. */

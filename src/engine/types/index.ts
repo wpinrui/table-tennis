@@ -10,6 +10,7 @@ export type {
   SpinRange,
   ShotRatings,
   ShotPreferences,
+  ServePreferences,
   ShotRepertoire,
   ServeArsenal,
   Player,
