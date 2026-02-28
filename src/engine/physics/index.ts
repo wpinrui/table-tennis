@@ -357,19 +357,21 @@ export class DefaultPhysicsEngine implements PhysicsEngine {
 
     // Constraint 2: clear net at height targetNetHeight when crossing Y=0
     // Only applies when the ball actually crosses the net (start and target on opposite sides)
+    const dirX = dx / horizontalDist;
+    const dirY = dy / horizontalDist;
+
+    // Constraint 2: clear net at height targetNetHeight when crossing Y=0
+    // Only applies when the ball actually crosses the net (start and target on opposite sides)
     let vz = vzLand;
     const ballCrossesNet = start.y * target.y < 0;
     if (ballCrossesNet) {
-      const distToNet = Math.abs(start.y);
-      const flightTimeToNet = distToNet / Math.max(horizontalSpeed, 1);
+      const ySpeed = Math.abs(dirY * horizontalSpeed);
+      const flightTimeToNet = Math.abs(start.y) / Math.max(ySpeed, 1);
       const targetNetHeight = this.config.netHeight + netClearance;
       // z(t_net) >= targetNetHeight → vz >= (targetNetHeight - start.z + 0.5*g*t_net²) / t_net
       const vzNet = (targetNetHeight - start.z + 0.5 * g * flightTimeToNet * flightTimeToNet) / flightTimeToNet;
       vz = Math.max(vzLand, vzNet);
     }
-
-    const dirX = dx / horizontalDist;
-    const dirY = dy / horizontalDist;
 
     return {
       x: dirX * horizontalSpeed,
