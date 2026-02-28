@@ -111,18 +111,9 @@ export class DefaultPhysicsEngine implements PhysicsEngine {
     equipment: Equipment,
     arrival: ArrivalState,
   ): BallFlight {
-    const sideCaps = capabilities[intention.side];
-    const rubber = this.getRubber(equipment, intention.side);
-
-    // Convert intention fractions to absolute physical values
-    const effectiveSpeed = this.effectiveSpeedCeiling(sideCaps.powerCeiling, equipment.blade.speed, rubber);
-    const effectiveSpin = this.effectiveSpinCeiling(sideCaps.spinCeiling, rubber);
-
-    const speed = intention.power * effectiveSpeed;
-    const spinMag = intention.spinIntensity * effectiveSpin;
-
-    // Risk level = max of how close to ceilings
-    const riskLevel = Math.max(intention.power, intention.spinIntensity);
+    const { sideCaps, speed, riskLevel, intendedSpin } = this.resolvePhysicalValues(
+      intention, capabilities, equipment,
+    );
 
     // Execution quality
     const quality = computeExecutionQuality(
@@ -139,12 +130,6 @@ export class DefaultPhysicsEngine implements PhysicsEngine {
       intention.targetPosition,
       intention.netClearance,
       speed,
-    );
-
-    // Compute intended spin vector
-    const intendedSpin = this.computeSpinVector(
-      spinMag,
-      intention.spinDirection,
     );
 
     // Apply error
@@ -187,18 +172,9 @@ export class DefaultPhysicsEngine implements PhysicsEngine {
     equipment: Equipment,
     serviceSkill: number,
   ): BallFlight {
-    const sideCaps = capabilities[intention.side];
-    const rubber = this.getRubber(equipment, intention.side);
-
-    // Convert intention to physical values
-    const effectiveSpeed = this.effectiveSpeedCeiling(sideCaps.powerCeiling, equipment.blade.speed, rubber);
-    const effectiveSpin = this.effectiveSpinCeiling(sideCaps.spinCeiling, rubber);
-
-    const speed = intention.power * effectiveSpeed;
-    const spinMag = intention.spinIntensity * effectiveSpin;
-
-    // Risk level
-    const riskLevel = Math.max(intention.power, intention.spinIntensity);
+    const { sideCaps, speed, riskLevel, intendedSpin } = this.resolvePhysicalValues(
+      intention, capabilities, equipment,
+    );
 
     // Serve quality
     const quality = computeServeQuality(
@@ -230,12 +206,6 @@ export class DefaultPhysicsEngine implements PhysicsEngine {
       firstBounceTarget,
       intention.netClearance,
       speed,
-    );
-
-    // Compute spin
-    const intendedSpin = this.computeSpinVector(
-      spinMag,
-      intention.spinDirection,
     );
 
     // Apply error
@@ -290,6 +260,31 @@ export class DefaultPhysicsEngine implements PhysicsEngine {
   // ---------------------------------------------------------------------------
   // Private helpers
   // ---------------------------------------------------------------------------
+
+  /**
+   * Resolve a shot/serve intention + equipment into physical values.
+   * Shared between executeShot and executeServe.
+   */
+  private resolvePhysicalValues(
+    intention: { side: StrokeSide; power: number; spinIntensity: number; spinDirection: { topspin: number; sidespin: number } },
+    capabilities: StrokeCapabilities,
+    equipment: Equipment,
+  ) {
+    const sideCaps = capabilities[intention.side];
+    const rubber = this.getRubber(equipment, intention.side);
+    const effectiveSpeed = this.effectiveSpeedCeiling(sideCaps.powerCeiling, equipment.blade.speed, rubber);
+    const effectiveSpin = this.effectiveSpinCeiling(sideCaps.spinCeiling, rubber);
+
+    return {
+      sideCaps,
+      speed: intention.power * effectiveSpeed,
+      riskLevel: Math.max(intention.power, intention.spinIntensity),
+      intendedSpin: this.computeSpinVector(
+        intention.spinIntensity * effectiveSpin,
+        intention.spinDirection,
+      ),
+    };
+  }
 
   /** Get the rubber for the given paddle side. */
   private getRubber(equipment: Equipment, side: StrokeSide): Rubber {

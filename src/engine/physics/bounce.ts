@@ -2,10 +2,13 @@
  * Bounce mechanics — what happens when the ball contacts the table surface.
  *
  * Spin-velocity coupling on bounce:
- * - Topspin (positive spin.y) → accelerates forward
- * - Backspin (negative spin.y) → decelerates / kicks back
- * - Sidespin (spin.x) → deflects laterally
+ * - spin.y > 0 → adds to velocity.y (accelerates a +Y ball, decelerates a -Y ball)
+ * - spin.y < 0 → subtracts from velocity.y (accelerates a -Y ball, decelerates a +Y ball)
+ * - spin.x → deflects laterally
  * - Spin magnitude reduced by surface friction
+ *
+ * NOTE: The spin vector's relationship to "topspin"/"backspin" depends on the
+ * ball's travel direction. See GitHub issue for spin convention details.
  */
 
 import type { Vec3 } from "../types/index.js";
@@ -35,9 +38,8 @@ export function applyBounce(
   const vz = -velocity.z * restitution;
 
   // Horizontal velocity modified by spin-surface interaction
-  // Topspin (positive spin.y) pushes ball forward on bounce
-  // Backspin (negative spin.y) slows/reverses horizontal motion
-  // Sidespin (spin.x) deflects laterally
+  // spin.y adds directly to velocity.y (sign determines direction)
+  // spin.x deflects laterally
   const spinEffect = surfaceFriction;
   const vx = velocity.x + spin.x * spinEffect;
   const vy = velocity.y + spin.y * spinEffect;
