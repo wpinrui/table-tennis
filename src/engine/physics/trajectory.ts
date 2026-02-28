@@ -130,7 +130,7 @@ export function simulateFlight(
           vel = {
             x: vel.x * config.netClipRetentionX,
             y: vel.y * config.netClipRetentionY,
-            z: Math.max(vel.z, vel.z * config.netClipMinRetentionZ),
+            z: vel.z * config.netClipMinRetentionZ,
           };
           crossedNet = true;
         } else {

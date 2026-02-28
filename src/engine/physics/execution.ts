@@ -97,7 +97,7 @@ export function applyError(
   // Angular deviation on velocity direction (radians)
   const angularErrorScale = config.baseErrorStddev * errorScale * accuracyMultiplier;
   const angleError = rng.gaussian(0, angularErrorScale);
-  const elevationError = rng.gaussian(0, angularErrorScale * 0.5);
+  const elevationError = rng.gaussian(0, angularErrorScale * config.elevationErrorScale);
 
   // Rotate velocity by angular error (simplified: apply to x/y components)
   const cosA = Math.cos(angleError);

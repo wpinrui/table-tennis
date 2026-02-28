@@ -96,6 +96,8 @@ export interface PhysicsConfig {
   accuracyErrorFloor: number;
   /** Spin error scale relative to execution quality error. */
   spinErrorScale: number;
+  /** Elevation error scale relative to azimuthal error (0-1). */
+  elevationErrorScale: number;
 
   // --- Available sides ---
   /** Positional deficit above which only one paddle side is reachable (0-1). */
@@ -172,6 +174,7 @@ export const DEFAULT_PHYSICS_CONFIG: PhysicsConfig = {
   // Error model tuning
   accuracyErrorFloor: 0.3,
   spinErrorScale: 0.2,
+  elevationErrorScale: 0.5,
 
   // Available sides
   stretchThreshold: 0.85,
