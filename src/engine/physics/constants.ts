@@ -45,7 +45,6 @@ export interface PhysicsConfig {
 
   // --- Error model ---
   baseErrorStddev: number;    // base angular error in radians at quality=0
-  placementErrorScale: number;// cm error scaling factor
 
   // --- Movement ---
   maxRecoverySpeed: number;   // cm/s at footwork=100
@@ -94,7 +93,6 @@ export const DEFAULT_PHYSICS_CONFIG: PhysicsConfig = {
 
   // Error model
   baseErrorStddev: 0.15,
-  placementErrorScale: 15,
 
   // Movement
   maxRecoverySpeed: 500,

@@ -168,15 +168,17 @@ describe("bounce", () => {
 
   it("topspin accelerates forward on bounce", () => {
     const noSpin = applyBounce({ x: 0, y: -200, z: -50 }, { x: 0, y: 0, z: 0 }, cfg);
-    const topSpin = applyBounce({ x: 0, y: -200, z: -50 }, { x: 0, y: -30, z: 0 }, cfg);
-    // Topspin (negative Y = ball rotating forward) should make Y more negative (faster forward)
+    // For a -Y ball, topspin axis is +X (ωx > 0). Bounce formula: vy -= ωx * friction
+    const topSpin = applyBounce({ x: 0, y: -200, z: -50 }, { x: 30, y: 0, z: 0 }, cfg);
+    // Topspin should make Y more negative (faster forward)
     expect(topSpin.velocity.y).toBeLessThan(noSpin.velocity.y);
   });
 
   it("backspin decelerates forward on bounce", () => {
     const noSpin = applyBounce({ x: 0, y: -200, z: -50 }, { x: 0, y: 0, z: 0 }, cfg);
-    const backSpin = applyBounce({ x: 0, y: -200, z: -50 }, { x: 0, y: 30, z: 0 }, cfg);
-    // Backspin (positive Y = ball rotating backward) should slow forward motion
+    // For a -Y ball, backspin axis is -X (ωx < 0). Bounce formula: vy -= ωx * friction
+    const backSpin = applyBounce({ x: 0, y: -200, z: -50 }, { x: -30, y: 0, z: 0 }, cfg);
+    // Backspin should slow forward motion
     expect(backSpin.velocity.y).toBeGreaterThan(noSpin.velocity.y);
   });
 
@@ -247,25 +249,22 @@ describe("error model", () => {
     // Velocity should be very close to intended
     expect(result.velocity.x).toBeCloseTo(vel.x, 0);
     expect(result.velocity.y).toBeCloseTo(vel.y, 0);
-    // Placement error should be small
-    expect(Math.abs(result.targetOffset.x)).toBeLessThan(10);
-    expect(Math.abs(result.targetOffset.y)).toBeLessThan(10);
   });
 
-  it("low quality → larger error", () => {
+  it("low quality → larger velocity error", () => {
     const rng1 = makeRng(100);
     const rng2 = makeRng(100);
     const vel: Vec3 = { x: 0, y: -300, z: 50 };
     const spin: Vec3 = { x: 0, y: 20, z: 0 };
 
-    // Collect errors over multiple trials
+    // Collect velocity deviations over multiple trials
     let highQualityError = 0;
     let lowQualityError = 0;
     for (let i = 0; i < 100; i++) {
       const r1 = applyError(vel, spin, 0.95, 80, cfg, rng1);
       const r2 = applyError(vel, spin, 0.2, 80, cfg, rng2);
-      highQualityError += Math.abs(r1.targetOffset.x) + Math.abs(r1.targetOffset.y);
-      lowQualityError += Math.abs(r2.targetOffset.x) + Math.abs(r2.targetOffset.y);
+      highQualityError += Math.abs(r1.velocity.x - vel.x) + Math.abs(r1.velocity.y - vel.y);
+      lowQualityError += Math.abs(r2.velocity.x - vel.x) + Math.abs(r2.velocity.y - vel.y);
     }
     expect(lowQualityError).toBeGreaterThan(highQualityError);
   });

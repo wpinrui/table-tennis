@@ -111,7 +111,7 @@ export class DefaultPhysicsEngine implements PhysicsEngine {
     equipment: Equipment,
     arrival: ArrivalState,
   ): BallFlight {
-    const { sideCaps, speed, riskLevel, intendedSpin } = this.resolvePhysicalValues(
+    const { sideCaps, speed, spinMag, riskLevel } = this.resolvePhysicalValues(
       intention, capabilities, equipment,
     );
 
@@ -130,6 +130,11 @@ export class DefaultPhysicsEngine implements PhysicsEngine {
       intention.targetPosition,
       intention.netClearance,
       speed,
+    );
+
+    // Compute spin vector — needs velocity direction for correct axis
+    const intendedSpin = this.computeSpinVector(
+      spinMag, intention.spinDirection, intendedVelocity,
     );
 
     // Apply error
@@ -172,7 +177,7 @@ export class DefaultPhysicsEngine implements PhysicsEngine {
     equipment: Equipment,
     serviceSkill: number,
   ): BallFlight {
-    const { sideCaps, speed, riskLevel, intendedSpin } = this.resolvePhysicalValues(
+    const { sideCaps, speed, spinMag, riskLevel } = this.resolvePhysicalValues(
       intention, capabilities, equipment,
     );
 
@@ -206,6 +211,11 @@ export class DefaultPhysicsEngine implements PhysicsEngine {
       firstBounceTarget,
       intention.netClearance,
       speed,
+    );
+
+    // Compute spin vector — needs velocity direction for correct axis
+    const intendedSpin = this.computeSpinVector(
+      spinMag, intention.spinDirection, serveVelocity,
     );
 
     // Apply error
@@ -264,9 +274,12 @@ export class DefaultPhysicsEngine implements PhysicsEngine {
   /**
    * Resolve a shot/serve intention + equipment into physical values.
    * Shared between executeShot and executeServe.
+   *
+   * Does NOT compute spin vector — that requires the velocity direction,
+   * which is only known after computeVelocity.
    */
   private resolvePhysicalValues(
-    intention: { side: StrokeSide; power: number; spinIntensity: number; spinDirection: { topspin: number; sidespin: number } },
+    intention: { side: StrokeSide; power: number; spinIntensity: number },
     capabilities: StrokeCapabilities,
     equipment: Equipment,
   ) {
@@ -278,11 +291,8 @@ export class DefaultPhysicsEngine implements PhysicsEngine {
     return {
       sideCaps,
       speed: intention.power * effectiveSpeed,
+      spinMag: intention.spinIntensity * effectiveSpin,
       riskLevel: Math.max(intention.power, intention.spinIntensity),
-      intendedSpin: this.computeSpinVector(
-        intention.spinIntensity * effectiveSpin,
-        intention.spinDirection,
-      ),
     };
   }
 
@@ -379,28 +389,51 @@ export class DefaultPhysicsEngine implements PhysicsEngine {
   }
 
   /**
-   * Compute spin vector from magnitude and direction intention.
-   * Rubber type spin modifier is already applied in effectiveSpinCeiling,
-   * so this method only decomposes magnitude into topspin/sidespin axes.
+   * Compute spin angular velocity vector from magnitude, direction intention,
+   * and ball velocity.
+   *
+   * The spin axis depends on the ball's travel direction:
+   * - Topspin axis = -(horizontalDir × ẑ), perpendicular to travel in the
+   *   horizontal plane. This produces correct Magnus downward dip for topspin
+   *   and upward float for backspin, regardless of travel direction.
+   * - Sidespin axis = vertical (0, 0, 1). Produces lateral Magnus curve.
+   *
+   * The resulting vector is a physical angular velocity (rev/s) suitable for
+   * cross-product Magnus computation and contact-point bounce mechanics.
    */
   private computeSpinVector(
     magnitude: number,
     direction: { topspin: number; sidespin: number },
+    velocity: Vec3,
   ): Vec3 {
-    // Topspin component → spin.y (positive = topspin, negative = backspin)
-    // Sidespin component → spin.x
-    // Gyrospin (spin.z) is a small residual
-    const topspin = direction.topspin * magnitude;
-    const sidespin = direction.sidespin * magnitude;
+    const topspinAmount = direction.topspin * magnitude;
+    const sidespinAmount = direction.sidespin * magnitude;
 
     // Normalize so the total magnitude stays at `magnitude`
-    const total = Math.sqrt(topspin * topspin + sidespin * sidespin);
+    const total = Math.sqrt(topspinAmount * topspinAmount + sidespinAmount * sidespinAmount);
     const scale = total > 0 ? magnitude / total : 0;
+    const topspinMag = topspinAmount * scale;
+    const sidespinMag = sidespinAmount * scale;
 
+    // Topspin axis from velocity direction:
+    // horizontalDir × ẑ = (vy/h, -vx/h, 0), negate → (-vy/h, vx/h, 0)
+    const horizSpeed = Math.sqrt(velocity.x * velocity.x + velocity.y * velocity.y);
+
+    let ax: number, ay: number;
+    if (horizSpeed > 0) {
+      ax = -velocity.y / horizSpeed;
+      ay = velocity.x / horizSpeed;
+    } else {
+      // No horizontal motion — default topspin axis to +X
+      ax = 1;
+      ay = 0;
+    }
+
+    // Sidespin axis is vertical: (0, 0, 1)
     return {
-      x: sidespin * scale,
-      y: topspin * scale,
-      z: 0, // No gyrospin for now
+      x: topspinMag * ax,
+      y: topspinMag * ay,
+      z: sidespinMag,
     };
   }
 

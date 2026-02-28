@@ -8,7 +8,7 @@
  * scaled by (1 - quality). Higher risk → lower quality → wider error.
  */
 
-import type { Vec2, Vec3 } from "../types/index.js";
+import type { Vec3 } from "../types/index.js";
 import type { PhysicsConfig } from "./constants.js";
 import type { Rng } from "../rng.js";
 import { clamp } from "./vec-math.js";
@@ -66,7 +66,6 @@ export function computeServeQuality(
 export interface ErrorResult {
   velocity: Vec3;
   spin: Vec3;
-  targetOffset: Vec2;
 }
 
 /**
@@ -78,7 +77,7 @@ export interface ErrorResult {
  * @param accuracy - Player's accuracy for this side (0-100)
  * @param config - Physics config
  * @param rng - Seedable RNG
- * @returns Actual velocity, spin, and placement offset
+ * @returns Actual velocity and spin after error application
  */
 export function applyError(
   intendedVelocity: Vec3,
@@ -118,12 +117,5 @@ export function applyError(
     z: intendedSpin.z * spinError,
   };
 
-  // Placement error (cm offset from intended target)
-  const placementStddev = config.placementErrorScale * errorScale * (0.3 + 0.7 * accuracyFactor);
-  const targetOffset: Vec2 = {
-    x: rng.gaussian(0, placementStddev),
-    y: rng.gaussian(0, placementStddev),
-  };
-
-  return { velocity, spin, targetOffset };
+  return { velocity, spin };
 }

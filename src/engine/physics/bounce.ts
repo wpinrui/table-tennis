@@ -1,14 +1,18 @@
 /**
  * Bounce mechanics — what happens when the ball contacts the table surface.
  *
- * Spin-velocity coupling on bounce:
- * - spin.y > 0 → adds to velocity.y (accelerates a +Y ball, decelerates a -Y ball)
- * - spin.y < 0 → subtracts from velocity.y (accelerates a -Y ball, decelerates a +Y ball)
- * - spin.x → deflects laterally
- * - Spin magnitude reduced by surface friction
+ * The spin vector is a physical angular velocity (rev/s). Friction at the
+ * table contact point transfers rotational energy to translational velocity:
  *
- * NOTE: The spin vector's relationship to "topspin"/"backspin" depends on the
- * ball's travel direction. See GitHub issue for spin convention details.
+ * Surface velocity at contact = ω × (0, 0, -R)  =  (-ωy·R, ωx·R, 0)
+ * Friction opposes this sliding → Δvx ∝ +ωy, Δvy ∝ -ωx
+ *
+ * This correctly gives:
+ * - Topspin (ωx > 0 for -Y ball): vy decreases → ball accelerates forward
+ * - Backspin (ωx < 0 for -Y ball): vy increases → ball decelerates
+ * - Works symmetrically for +Y balls (ωx < 0 for topspin on +Y)
+ *
+ * Spin magnitude reduced by surface friction (energy transfer to velocity).
  */
 
 import type { Vec3 } from "../types/index.js";
@@ -37,12 +41,13 @@ export function applyBounce(
   // Vertical velocity: reverse and reduce by coefficient of restitution
   const vz = -velocity.z * restitution;
 
-  // Horizontal velocity modified by spin-surface interaction
-  // spin.y adds directly to velocity.y (sign determines direction)
-  // spin.x deflects laterally
-  const spinEffect = surfaceFriction;
-  const vx = velocity.x + spin.x * spinEffect;
-  const vy = velocity.y + spin.y * spinEffect;
+  // Horizontal velocity modified by spin-surface interaction.
+  // Derived from contact-point surface velocity: ω × (0, 0, -R) = (-ωy·R, ωx·R, 0)
+  // Friction opposes the surface sliding, so the effect on the ball is:
+  //   Δvx = +ωy · friction,  Δvy = -ωx · friction
+  // (Ball radius R is absorbed into the surfaceFriction coefficient.)
+  const vx = velocity.x + spin.y * surfaceFriction;
+  const vy = velocity.y - spin.x * surfaceFriction;
 
   // Spin reduced by surface friction (energy transfer to velocity)
   const spinRetention = 1 - surfaceFriction;
