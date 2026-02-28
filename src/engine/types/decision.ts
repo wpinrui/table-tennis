@@ -1,5 +1,5 @@
-import type { Vec2, Vec3 } from "./results";
-import type { Player, StrokeSide, StrokeCapabilities, Equipment } from "./player";
+import type { Vec2, Vec3 } from "./results.js";
+import type { Player, StrokeSide, StrokeCapabilities, Equipment } from "./player.js";
 
 // ---------------------------------------------------------------------------
 // Player Engine — input types
