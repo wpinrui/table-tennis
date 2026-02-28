@@ -2,7 +2,6 @@ export type {
   Handedness,
   RubberType,
   ShotType,
-  ServeType,
   AnyShotType,
   PlayerAttributes,
   Rubber,
@@ -10,9 +9,8 @@ export type {
   SpinRange,
   ShotRatings,
   ShotPreferences,
-  ServePreferences,
   ShotRepertoire,
-  ServeArsenal,
+  ServeTendencies,
   Player,
 } from "./player";
 

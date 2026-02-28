@@ -65,11 +65,9 @@ export interface Point {
   gameNumber: number;
   /** Name of the serving player. */
   server: string;
-  /** Serve type used. */
-  serveType: string;
   /** Score in the current game BEFORE this point was played. */
   scoreBefore: Score;
-  /** Full rally — every shot from serve to point end. First shot is always the serve. */
+  /** Full rally — every shot from serve to point end. First shot is always the serve (shotType: "serve"). */
   shots: Shot[];
   /** How the point ended. */
   outcome: {

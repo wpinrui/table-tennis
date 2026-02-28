@@ -109,7 +109,7 @@
         },
         "shotType": {
           "type": "string",
-          "description": "The shot type used. One of the shot types (topspinLoop, push, block, smash, chop, flick) or serve types (shortBackspin, longTopspin, pendulum, reversePendulum, tomahawk)."
+          "description": "The shot type used. One of the rally shot types (topspinLoop, push, block, smash, chop, flick) or 'serve' for the first shot of each point. Serve physical properties are captured in the ballTrajectory."
         },
         "ballTrajectory": {
           "type": "object",
@@ -160,7 +160,7 @@
     "point": {
       "type": "object",
       "description": "A single point in a match. Contains the serve, full shot sequence (rally), and outcome.",
-      "required": ["gameNumber", "server", "serveType", "scoreBefore", "shots", "outcome"],
+      "required": ["gameNumber", "server", "scoreBefore", "shots", "outcome"],
       "additionalProperties": false,
       "properties": {
         "gameNumber": {
@@ -171,10 +171,6 @@
         "server": {
           "type": "string",
           "description": "Name of the serving player."
-        },
-        "serveType": {
-          "type": "string",
-          "description": "The serve type used (shortBackspin, longTopspin, pendulum, reversePendulum, tomahawk)."
         },
         "scoreBefore": {
           "type": "object",
@@ -190,7 +186,7 @@
           "type": "array",
           "items": { "$ref": "#/$defs/shot" },
           "minItems": 1,
-          "description": "The full rally — every shot from serve to point end. First shot is always the serve."
+          "description": "The full rally — every shot from serve to point end. First shot is always the serve (shotType: 'serve'). The serve's physical properties (speed, spin, placement) are captured in its ballTrajectory."
         },
         "outcome": {
           "type": "object",

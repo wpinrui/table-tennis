@@ -2,9 +2,9 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://github.com/wpinrui/table-tennis/schemas/player.schema.json",
   "title": "Player",
-  "description": "A table tennis player with skill attributes, equipment, shot repertoire, and playstyle preferences. Each player is a separate JSON file in the /players/ folder. Files can be hand-authored or AI-generated.",
+  "description": "A table tennis player with skill attributes, equipment, shot repertoire, serve tendencies, and playstyle preferences. Each player is a separate JSON file in the /players/ folder. Files can be hand-authored or AI-generated.",
   "type": "object",
-  "required": ["name", "handedness", "attributes", "equipment", "preferences", "servePreferences", "shots", "serves"],
+  "required": ["name", "handedness", "attributes", "equipment", "preferences", "shots", "serveTendencies"],
   "additionalProperties": false,
   "properties": {
     "name": {
@@ -25,7 +25,7 @@
     "attributes": {
       "type": "object",
       "description": "Global attributes that affect all shots and overall play. Scale: 0 (no ability) to 100 (theoretical human peak).",
-      "required": ["footwork", "reaction", "spinRead", "deception", "stamina", "mental"],
+      "required": ["footwork", "reaction", "spinRead", "deception", "stamina", "mental", "service", "adaptability"],
       "additionalProperties": false,
       "properties": {
         "footwork": {
@@ -63,6 +63,18 @@
           "minimum": 0,
           "maximum": 100,
           "description": "Performance under pressure. Affects play quality in high-stakes situations: deuce, match point, comebacks, decisive games. Low mental = chokes under pressure. High mental = thrives in clutch moments."
+        },
+        "service": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 100,
+          "description": "Serve execution skill. Determines how closely the actual serve matches the player's intended serve properties (speed, spin, placement). Low = large error between intent and result. High = precise execution. Also inherently makes serves harder to read — a skilled server can place the ball tighter to the net/edges and generate more extreme spin."
+        },
+        "adaptability": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 100,
+          "description": "How quickly the player adjusts tactics mid-match based on what's working or failing. High = reads the game well and shifts tendencies quickly (e.g., stops serving long after opponent keeps attacking them). Low = stubbornly sticks to their game plan even when it's failing. Affects both serve tendencies and shot preferences during a match."
         }
       }
     },
@@ -98,7 +110,7 @@
     },
     "preferences": {
       "type": "object",
-      "description": "Shot preference weights defining the player's playstyle DNA. Each value is a relative weight (0 to 1) indicating how often the player gravitates toward that shot type when they have a free choice. Weights do NOT need to sum to 1 — they are normalized at runtime. A chopper might have chop: 0.50, push: 0.20. An attacker might have topspinLoop: 0.45, smash: 0.20.",
+      "description": "Shot preference weights defining the player's playstyle DNA. Each value is a relative weight (0 to 1) indicating how often the player gravitates toward that shot type when they have a free choice. Weights do NOT need to sum to 1 — they are normalized at runtime. These are BASE values — during a match, the engine adjusts them based on what's working/failing (rate of adjustment driven by adaptability attribute). A chopper might have chop: 0.50, push: 0.20. An attacker might have topspinLoop: 0.45, smash: 0.20.",
       "required": ["topspinLoop", "push", "block", "smash", "chop", "flick"],
       "additionalProperties": false,
       "properties": {
@@ -140,44 +152,6 @@
         }
       }
     },
-    "servePreferences": {
-      "type": "object",
-      "description": "Serve preference weights defining which serves the player favors. Same concept as shot preferences but for serve selection. Weights do NOT need to sum to 1 — they are normalized at runtime. Situational modifiers may adjust these at runtime (e.g., a player with high mental may favor their best serve at match point).",
-      "required": ["shortBackspin", "longTopspin", "pendulum", "reversePendulum", "tomahawk"],
-      "additionalProperties": false,
-      "properties": {
-        "shortBackspin": {
-          "type": "number",
-          "minimum": 0,
-          "maximum": 1,
-          "description": "Preference weight for short backspin serve (the safe option)."
-        },
-        "longTopspin": {
-          "type": "number",
-          "minimum": 0,
-          "maximum": 1,
-          "description": "Preference weight for long topspin serve (aggressive, rushes opponent)."
-        },
-        "pendulum": {
-          "type": "number",
-          "minimum": 0,
-          "maximum": 1,
-          "description": "Preference weight for pendulum serve (most common deceptive serve)."
-        },
-        "reversePendulum": {
-          "type": "number",
-          "minimum": 0,
-          "maximum": 1,
-          "description": "Preference weight for reverse pendulum serve (contrast to pendulum)."
-        },
-        "tomahawk": {
-          "type": "number",
-          "minimum": 0,
-          "maximum": 1,
-          "description": "Preference weight for tomahawk serve (heavy sidespin, distinctive)."
-        }
-      }
-    },
     "shots": {
       "type": "object",
       "description": "Shot repertoire. Each shot type has skill ratings that determine quality when executed. Not every player needs high ratings in every shot — gaps in the repertoire are realistic and create exploitable weaknesses.",
@@ -192,17 +166,54 @@
         "flick": { "$ref": "#/$defs/shotRatings", "description": "Flick — wrist-snap attack over short balls that can't be looped. Requires good timing and touch. Key for attacking short serves." }
       }
     },
-    "serves": {
+    "serveTendencies": {
       "type": "object",
-      "description": "Serve arsenal. Serves are the most important shot in table tennis — the only shot where the player has full control of spin, placement, and timing. Each serve type has its own ratings. High serve skill inherently makes serves harder to read (higher spin magnitudes, wider spin ranges, better placement).",
-      "required": ["shortBackspin", "longTopspin", "pendulum", "reversePendulum", "tomahawk"],
+      "description": "Serve tendency profile. Instead of named serve types, serves are defined by continuous physical tendencies. The engine samples from these tendencies to generate each serve's intended properties, then applies error based on the service attribute. These are BASE values — the engine adjusts them mid-match based on adaptability. In a future human-player mode, the human can override these directly.",
+      "required": ["length", "speed", "spinAmount", "spinVariation", "backspinBias", "sidespinBias", "risk"],
       "additionalProperties": false,
       "properties": {
-        "shortBackspin": { "$ref": "#/$defs/shotRatings", "description": "Short backspin serve — lands short (near the net), low bounce, backspin. Prevents the receiver from attacking. The 'safe' serve." },
-        "longTopspin": { "$ref": "#/$defs/shotRatings", "description": "Long topspin serve — fast, deep, with topspin. Rushes the opponent but is easier to attack if read correctly." },
-        "pendulum": { "$ref": "#/$defs/shotRatings", "description": "Pendulum serve — forehand serve with sidespin + backspin/topspin variation. The most common deceptive serve in modern table tennis." },
-        "reversePendulum": { "$ref": "#/$defs/shotRatings", "description": "Reverse pendulum serve — opposite sidespin direction to pendulum. Used to create contrast and confusion when alternated with pendulum serves." },
-        "tomahawk": { "$ref": "#/$defs/shotRatings", "description": "Tomahawk serve — backhand serve with heavy sidespin. Distinctive motion, can generate extreme spin. Less common but effective when mastered." }
+        "length": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 100,
+          "description": "Placement depth tendency. 0 = always serves short (near the net, low bounce, hard to attack). 100 = always serves long (deep to the end of the table, rushes opponent). 50 = balanced mix."
+        },
+        "speed": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 100,
+          "description": "Serve speed tendency. 0 = slow serves (maximizes spin and control). 100 = fast serves (rushes opponent but less spin)."
+        },
+        "spinAmount": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 100,
+          "description": "Spin magnitude tendency. 0 = minimal spin (flat serves). 100 = heavy spin on every serve."
+        },
+        "spinVariation": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 100,
+          "description": "How much the spin direction and magnitude changes serve-to-serve. 0 = same spin every time (predictable, easy to read after a few serves). 100 = wildly varied (hard to read, but requires high service skill to control). Interacts with deception — high variation + high deception is devastating."
+        },
+        "backspinBias": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 100,
+          "description": "Tendency toward backspin vs topspin. 0 = pure topspin serves. 50 = equal mix. 100 = pure backspin serves. Most defensive players lean high; attackers lean lower."
+        },
+        "sidespinBias": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 100,
+          "description": "How much sidespin is added to serves. 0 = no sidespin (pure top/backspin). 100 = heavy sidespin on every serve. Sidespin makes serves curve and is harder to read when combined with top/backspin variation."
+        },
+        "risk": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 100,
+          "description": "Serve aggression. 0 = safe serves (comfortable margins from net and edges, low fault rate). 100 = aggressive serves (tight to the net, close to edges, more aces but more faults). Interacts with service attribute — high risk + low service = many faults."
+        }
       }
     },
     "badges": {

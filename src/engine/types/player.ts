@@ -13,16 +13,8 @@ export type ShotType =
   | "chop"
   | "flick";
 
-/** Serve types in a player's arsenal. */
-export type ServeType =
-  | "shortBackspin"
-  | "longTopspin"
-  | "pendulum"
-  | "reversePendulum"
-  | "tomahawk";
-
-/** All shot types (rally + serve) that can appear in simulation output. */
-export type AnyShotType = ShotType | ServeType;
+/** All shot types that can appear in simulation output (rally shots + serve). */
+export type AnyShotType = ShotType | "serve";
 
 /**
  * Global player attributes affecting all shots and overall play.
@@ -41,6 +33,10 @@ export interface PlayerAttributes {
   stamina: number;
   /** Performance under pressure (deuce, match point, comebacks). */
   mental: number;
+  /** Serve execution skill. Determines error between intended and actual serve. */
+  service: number;
+  /** How quickly the player adjusts tactics mid-match based on what's working/failing. */
+  adaptability: number;
 }
 
 /** Paddle rubber configuration. */
@@ -89,17 +85,34 @@ export interface ShotRatings {
   consistency: number;
 }
 
-/** Shot preference weights — the player's playstyle DNA. */
+/** Shot preference weights — the player's playstyle DNA. Base values adjusted mid-match by adaptability. */
 export type ShotPreferences = Record<ShotType, number>;
-
-/** Serve preference weights — which serves the player favors. */
-export type ServePreferences = Record<ServeType, number>;
 
 /** Shot repertoire — skill ratings per shot type. */
 export type ShotRepertoire = Record<ShotType, ShotRatings>;
 
-/** Serve arsenal — skill ratings per serve type. */
-export type ServeArsenal = Record<ServeType, ShotRatings>;
+/**
+ * Serve tendency profile. Continuous physical tendencies that define what kinds
+ * of serves a player attempts. The engine samples from these to generate each
+ * serve's intended properties, then applies error based on the service attribute.
+ * Base values adjusted mid-match by adaptability.
+ */
+export interface ServeTendencies {
+  /** Placement depth (0=short, 100=long). */
+  length: number;
+  /** Speed tendency (0=slow, 100=fast). */
+  speed: number;
+  /** Spin magnitude tendency (0=flat, 100=heavy spin). */
+  spinAmount: number;
+  /** Serve-to-serve spin variation (0=same every time, 100=wildly varied). */
+  spinVariation: number;
+  /** Backspin vs topspin bias (0=pure topspin, 50=equal, 100=pure backspin). */
+  backspinBias: number;
+  /** Sidespin amount (0=no sidespin, 100=heavy sidespin). */
+  sidespinBias: number;
+  /** Aggression (0=safe margins, 100=tight to net/edges, more aces + more faults). */
+  risk: number;
+}
 
 /**
  * A table tennis player.
@@ -116,14 +129,12 @@ export interface Player {
   attributes: PlayerAttributes;
   /** Paddle equipment. */
   equipment: Equipment;
-  /** Shot preference weights (playstyle DNA). Normalized at runtime. */
+  /** Shot preference weights (playstyle DNA). Base values adjusted mid-match. */
   preferences: ShotPreferences;
-  /** Serve preference weights. Normalized at runtime. */
-  servePreferences: ServePreferences;
   /** Rally shot skill ratings. */
   shots: ShotRepertoire;
-  /** Serve skill ratings. */
-  serves: ServeArsenal;
+  /** Serve tendency profile. */
+  serveTendencies: ServeTendencies;
   /** Optional badges (designed but not active in Phase 1). */
   badges?: string[];
 }

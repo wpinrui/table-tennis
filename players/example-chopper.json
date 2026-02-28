@@ -8,7 +8,9 @@
     "spinRead": 85,
     "deception": 80,
     "stamina": 88,
-    "mental": 78
+    "mental": 78,
+    "service": 72,
+    "adaptability": 70
   },
   "equipment": {
     "blade": { "speed": 55 },
@@ -32,13 +34,6 @@
     "smash": 0.03,
     "chop": 0.50,
     "flick": 0.02
-  },
-  "servePreferences": {
-    "shortBackspin": 0.40,
-    "longTopspin": 0.05,
-    "pendulum": 0.30,
-    "reversePendulum": 0.15,
-    "tomahawk": 0.10
   },
   "shots": {
     "topspinLoop": {
@@ -78,37 +73,14 @@
       "consistency": 52
     }
   },
-  "serves": {
-    "shortBackspin": {
-      "power": 20,
-      "spinRange": { "min": 35, "max": 80 },
-      "accuracy": 85,
-      "consistency": 88
-    },
-    "longTopspin": {
-      "power": 55,
-      "spinRange": { "min": 30, "max": 60 },
-      "accuracy": 70,
-      "consistency": 72
-    },
-    "pendulum": {
-      "power": 30,
-      "spinRange": { "min": 30, "max": 78 },
-      "accuracy": 75,
-      "consistency": 78
-    },
-    "reversePendulum": {
-      "power": 28,
-      "spinRange": { "min": 25, "max": 70 },
-      "accuracy": 72,
-      "consistency": 75
-    },
-    "tomahawk": {
-      "power": 32,
-      "spinRange": { "min": 30, "max": 72 },
-      "accuracy": 68,
-      "consistency": 70
-    }
+  "serveTendencies": {
+    "length": 25,
+    "speed": 30,
+    "spinAmount": 80,
+    "spinVariation": 70,
+    "backspinBias": 75,
+    "sidespinBias": 55,
+    "risk": 30
   },
   "badges": []
 }
