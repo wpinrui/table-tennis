@@ -90,10 +90,12 @@ export function applyError(
   const errorScale = 1 - quality;
   const accuracyFactor = 1 - accuracy / 100;
 
+  // Accuracy lerps from accuracyErrorFloor (at accuracy=100) to 1.0 (at accuracy=0),
+  // so even a perfectly executing player has a minimum error floor.
+  const accuracyMultiplier = config.accuracyErrorFloor + (1 - config.accuracyErrorFloor) * accuracyFactor;
+
   // Angular deviation on velocity direction (radians)
-  // Accuracy affects how tightly the player can place the ball — worse accuracy
-  // widens the angular error even at high execution quality.
-  const angularErrorScale = config.baseErrorStddev * errorScale * (config.accuracyErrorFloor + (1 - config.accuracyErrorFloor) * accuracyFactor);
+  const angularErrorScale = config.baseErrorStddev * errorScale * accuracyMultiplier;
   const angleError = rng.gaussian(0, angularErrorScale);
   const elevationError = rng.gaussian(0, angularErrorScale * 0.5);
 

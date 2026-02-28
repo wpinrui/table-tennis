@@ -7,6 +7,7 @@
 
 import type { Vec2, Vec3 } from "../types/index.js";
 import type {
+  SideCapabilities,
   StrokeCapabilities,
   Equipment,
   StrokeSide,
@@ -31,6 +32,13 @@ import {
   v3sub,
   clamp,
 } from "./vec-math.js";
+
+interface ResolvedPhysicalValues {
+  sideCaps: SideCapabilities;
+  speed: number;
+  spinMag: number;
+  riskLevel: number;
+}
 
 export class DefaultPhysicsEngine implements PhysicsEngine {
   private readonly config: PhysicsConfig;
@@ -282,7 +290,7 @@ export class DefaultPhysicsEngine implements PhysicsEngine {
     intention: { side: StrokeSide; power: number; spinIntensity: number },
     capabilities: StrokeCapabilities,
     equipment: Equipment,
-  ) {
+  ): ResolvedPhysicalValues {
     const sideCaps = capabilities[intention.side];
     const rubber = this.getRubber(equipment, intention.side);
     const effectiveSpeed = this.effectiveSpeedCeiling(sideCaps.powerCeiling, equipment.blade.speed, rubber);
