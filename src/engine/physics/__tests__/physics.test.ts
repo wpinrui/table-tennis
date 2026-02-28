@@ -234,6 +234,43 @@ describe("execution quality", () => {
     const qLow = computeServeQuality(30, 80, 0.3, cfg);
     expect(qHigh).toBeGreaterThan(qLow);
   });
+
+  it("spin misread → reduced quality", () => {
+    const qClean = computeExecutionQuality(80, 0, 0.5, 0, cfg, 0, 1);
+    const qMisread = computeExecutionQuality(80, 0, 0.5, 0, cfg, 0.8, 1);
+    expect(qMisread).toBeLessThan(qClean);
+  });
+
+  it("low stamina → reduced quality", () => {
+    const qFresh = computeExecutionQuality(80, 0, 0.5, 0, cfg, 0, 1);
+    const qTired = computeExecutionQuality(80, 0, 0.5, 0, cfg, 0, 0.3);
+    expect(qTired).toBeLessThan(qFresh);
+  });
+
+  it("all five degradation factors together", () => {
+    const qPerfect = computeExecutionQuality(80, 0, 0.5, 0, cfg, 0, 1);
+    const qAll = computeExecutionQuality(80, 0.5, 0.1, 0.7, cfg, 0.6, 0.4);
+    expect(qAll).toBeLessThan(qPerfect * 0.5);
+    expect(qAll).toBeGreaterThanOrEqual(0);
+  });
+
+  it("default params produce same results as explicit neutral values", () => {
+    const qDefault = computeExecutionQuality(80, 0, 0.5, 0.3, cfg);
+    const qExplicit = computeExecutionQuality(80, 0, 0.5, 0.3, cfg, 0, 1);
+    expect(qDefault).toBeCloseTo(qExplicit);
+  });
+
+  it("serve quality with low stamina → reduced quality", () => {
+    const qFresh = computeServeQuality(80, 80, 0.3, cfg, 1);
+    const qTired = computeServeQuality(80, 80, 0.3, cfg, 0.3);
+    expect(qTired).toBeLessThan(qFresh);
+  });
+
+  it("serve quality default stamina matches explicit fresh", () => {
+    const qDefault = computeServeQuality(80, 80, 0.3, cfg);
+    const qExplicit = computeServeQuality(80, 80, 0.3, cfg, 1);
+    expect(qDefault).toBeCloseTo(qExplicit);
+  });
 });
 
 // ---------------------------------------------------------------------------

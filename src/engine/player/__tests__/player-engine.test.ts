@@ -946,3 +946,168 @@ describe("spin-read pipeline", () => {
     expect(avg).toBeLessThan(0.3);
   });
 });
+
+// ---------------------------------------------------------------------------
+// DefaultPlayerEngine — spin misread and stamina integration
+// ---------------------------------------------------------------------------
+
+describe("DefaultPlayerEngine degradation state", () => {
+  it("getLastMisread() returns 0 before any decisions", () => {
+    const engine = new DefaultPlayerEngine(makeAttacker(), makeRng());
+    expect(engine.getLastMisread()).toBe(0);
+  });
+
+  it("getStaminaFactor() returns 1 (fresh) before any decisions", () => {
+    const engine = new DefaultPlayerEngine(makeAttacker(), makeRng());
+    expect(engine.getStaminaFactor()).toBe(1);
+  });
+
+  it("decideShot with spinny ball computes misread > 0", () => {
+    const engine = new DefaultPlayerEngine(makeAttacker(), makeRng());
+    const ctx = makeShotContext({
+      arrival: makeArrival({
+        ballSpin: { x: 10, y: 30, z: 5 },
+      }),
+      // Opponent has high deception, rally history includes deception effort
+      opponent: {
+        ...makeChopper(),
+        attributes: { ...CHOPPER_ATTRIBUTES, deception: 90 },
+      },
+      rallyHistory: [{
+        player: "Kim Soo-jin",
+        side: "backhand" as const,
+        ballFlight: {
+          startPosition: { x: 0, y: -100, z: 25 },
+          velocity: { x: 10, y: 300, z: -50 },
+          spin: { x: 10, y: 30, z: 5 },
+          apex: { x: 5, y: 0, z: 40 },
+          landingPosition: { x: 20, y: 80, z: 0 },
+          netContact: false,
+          edgeContact: false,
+          executionQuality: 0.8,
+          flightTime: 0.3,
+        },
+        deceptionEffort: 0.9,
+      }],
+    });
+
+    engine.decideShot(ctx);
+    // With high spin + high deception, attacker (spinRead=75) should misread somewhat
+    expect(engine.getLastMisread()).toBeGreaterThan(0);
+  });
+
+  it("decideShot with no spin produces zero misread", () => {
+    const engine = new DefaultPlayerEngine(makeAttacker(), makeRng());
+    const ctx = makeShotContext({
+      arrival: makeArrival({
+        ballSpin: { x: 0, y: 0, z: 0 },
+      }),
+    });
+
+    engine.decideShot(ctx);
+    expect(engine.getLastMisread()).toBe(0);
+  });
+
+  it("fatigue accumulates across multiple decideShot calls", () => {
+    const engine = new DefaultPlayerEngine(makeAttacker(), makeRng());
+    const ctx = makeShotContext();
+
+    const staminaBefore = engine.getStaminaFactor();
+    for (let i = 0; i < 10; i++) {
+      engine.decideShot(ctx);
+    }
+    const staminaAfter = engine.getStaminaFactor();
+
+    expect(staminaAfter).toBeLessThan(staminaBefore);
+    expect(staminaAfter).toBeGreaterThan(0);
+  });
+
+  it("high positional deficit causes more fatigue", () => {
+    const engineEasy = new DefaultPlayerEngine(makeAttacker(), makeRng(1));
+    const engineHard = new DefaultPlayerEngine(makeAttacker(), makeRng(1));
+
+    const ctxEasy = makeShotContext({
+      arrival: makeArrival({ positionalDeficit: 0.1 }),
+    });
+    const ctxHard = makeShotContext({
+      arrival: makeArrival({ positionalDeficit: 0.9 }),
+    });
+
+    for (let i = 0; i < 20; i++) {
+      engineEasy.decideShot(ctxEasy);
+      engineHard.decideShot(ctxHard);
+    }
+
+    expect(engineHard.getStaminaFactor()).toBeLessThan(engineEasy.getStaminaFactor());
+  });
+
+  it("high stamina attribute drains slower", () => {
+    const highStamina = {
+      ...makeAttacker(),
+      attributes: { ...ATTACKER_ATTRIBUTES, stamina: 95 },
+    };
+    const lowStamina = {
+      ...makeAttacker(),
+      attributes: { ...ATTACKER_ATTRIBUTES, stamina: 20 },
+    };
+
+    const engineHigh = new DefaultPlayerEngine(highStamina, makeRng(1));
+    const engineLow = new DefaultPlayerEngine(lowStamina, makeRng(1));
+    const ctx = makeShotContext();
+
+    for (let i = 0; i < 20; i++) {
+      engineHigh.decideShot({ ...ctx, player: highStamina });
+      engineLow.decideShot({ ...ctx, player: lowStamina });
+    }
+
+    expect(engineHigh.getStaminaFactor()).toBeGreaterThan(engineLow.getStaminaFactor());
+  });
+
+  it("onGameEnd partially recovers stamina", () => {
+    const engine = new DefaultPlayerEngine(makeAttacker(), makeRng());
+    const ctx = makeShotContext();
+
+    // Drain stamina
+    for (let i = 0; i < 30; i++) {
+      engine.decideShot(ctx);
+    }
+    const beforeRecovery = engine.getStaminaFactor();
+
+    engine.onGameEnd("Zhang Wei");
+    const afterRecovery = engine.getStaminaFactor();
+
+    expect(afterRecovery).toBeGreaterThan(beforeRecovery);
+    expect(afterRecovery).toBeLessThan(1); // Not fully recovered
+  });
+
+  it("onTimeout partially recovers stamina", () => {
+    const engine = new DefaultPlayerEngine(makeAttacker(), makeRng());
+    const ctx = makeShotContext();
+
+    for (let i = 0; i < 30; i++) {
+      engine.decideShot(ctx);
+    }
+    const beforeRecovery = engine.getStaminaFactor();
+
+    engine.onTimeout();
+    const afterRecovery = engine.getStaminaFactor();
+
+    expect(afterRecovery).toBeGreaterThan(beforeRecovery);
+    expect(afterRecovery).toBeLessThan(1);
+  });
+
+  it("fatigue never exceeds 1 (stamina factor never below 0)", () => {
+    const engine = new DefaultPlayerEngine(makeAttacker(), makeRng());
+    const ctx = makeShotContext({
+      arrival: makeArrival({ positionalDeficit: 0.95 }),
+    });
+
+    // Massive number of shots with high deficit
+    for (let i = 0; i < 500; i++) {
+      engine.decideShot(ctx);
+    }
+
+    expect(engine.getStaminaFactor()).toBeGreaterThanOrEqual(0);
+    expect(engine.getStaminaFactor()).toBeLessThanOrEqual(1);
+  });
+});

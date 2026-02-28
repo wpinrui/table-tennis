@@ -19,6 +19,7 @@ import type {
   ShotIntention,
   ServeIntention,
   BallFlight,
+  ShotDegradation,
 } from "../types/index.js";
 import type { Rng } from "../rng.js";
 import type { PhysicsConfig } from "./constants.js";
@@ -113,6 +114,7 @@ export class DefaultPhysicsEngine implements PhysicsEngine {
     capabilities: StrokeCapabilities,
     equipment: Equipment,
     arrival: ArrivalState,
+    degradation?: ShotDegradation,
   ): BallFlight {
     const { sideCaps, speed, spinMag, riskLevel } = this.resolvePhysicalValues(
       intention, capabilities, equipment,
@@ -125,6 +127,8 @@ export class DefaultPhysicsEngine implements PhysicsEngine {
       arrival.timeAvailable,
       riskLevel,
       this.config,
+      degradation?.spinMisread ?? 0,
+      degradation?.staminaFactor ?? 1,
     );
 
     // Compute intended velocity direction from contact point to target
@@ -180,6 +184,7 @@ export class DefaultPhysicsEngine implements PhysicsEngine {
     capabilities: StrokeCapabilities,
     equipment: Equipment,
     serviceSkill: number,
+    staminaFactor?: number,
   ): BallFlight {
     const { sideCaps, speed, spinMag, riskLevel } = this.resolvePhysicalValues(
       intention, capabilities, equipment,
@@ -191,6 +196,7 @@ export class DefaultPhysicsEngine implements PhysicsEngine {
       sideCaps.consistency,
       riskLevel,
       this.config,
+      staminaFactor ?? 1,
     );
 
     // Serve starts behind the server's end line

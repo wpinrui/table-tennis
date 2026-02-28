@@ -43,6 +43,8 @@ export interface PhysicsConfig {
   positionWeight: number;     // how much positional deficit hurts quality
   timePressureWeight: number; // how much time pressure hurts quality
   riskWeight: number;         // how much pushing ceilings hurts quality
+  spinMisreadWeight: number;  // how much spin misread hurts quality
+  staminaWeight: number;      // exponent for stamina degradation curve
 
   // --- Error model ---
   baseErrorStddev: number;    // base angular error in radians at quality=0
@@ -137,6 +139,8 @@ export const DEFAULT_PHYSICS_CONFIG: PhysicsConfig = {
   positionWeight: 0.6,
   timePressureWeight: 0.4,
   riskWeight: 0.5,
+  spinMisreadWeight: 0.5,
+  staminaWeight: 0.3,
 
   // Error model
   baseErrorStddev: 0.15,
