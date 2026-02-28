@@ -29,7 +29,7 @@ import {
   v2lerp,
   v2dist,
   clamp,
-} from "./vec-math.js";
+} from "../math/vec-math.js";
 
 interface ResolvedPhysicalValues {
   sideCaps: SideCapabilities;

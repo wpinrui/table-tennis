@@ -8,7 +8,7 @@
 import type { Vec3 } from "../types/index.js";
 import type { PhysicsConfig } from "./constants.js";
 import type { Rng } from "../rng.js";
-import { v3add, v3scale, v3cross, v3mag } from "./vec-math.js";
+import { v3add, v3scale, v3cross, v3mag } from "../math/vec-math.js";
 import { applyBounce } from "./bounce.js";
 
 export interface TrajectoryResult {

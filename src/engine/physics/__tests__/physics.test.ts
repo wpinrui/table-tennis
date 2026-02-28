@@ -8,7 +8,7 @@ import { computeExecutionQuality, computeServeQuality, applyError } from "../exe
 import {
   v3add, v3sub, v3cross, v3mag, v3normalize,
   v2dist, v2lerp, clamp,
-} from "../vec-math.js";
+} from "../../math/vec-math.js";
 import type { Vec3, Vec2 } from "../../types/index.js";
 import type { BallFlight, ShotIntention, ServeIntention, StrokeCapabilities, Equipment } from "../../types/index.js";
 
