@@ -6,7 +6,7 @@ import { simulateFlight } from "../trajectory.js";
 import { applyBounce } from "../bounce.js";
 import { computeExecutionQuality, computeServeQuality, applyError } from "../execution.js";
 import {
-  v3add, v3sub, v3scale, v3cross, v3mag, v3normalize,
+  v3add, v3sub, v3cross, v3mag, v3normalize,
   v2dist, v2lerp, clamp,
 } from "../vec-math.js";
 import type { Vec3, Vec2 } from "../../types/index.js";

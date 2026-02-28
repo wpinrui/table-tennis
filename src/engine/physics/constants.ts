@@ -30,6 +30,7 @@ export interface PhysicsConfig {
   // --- Ball properties ---
   ballMass: number;           // grams
   ballDiameter: number;       // cm
+  airDensity: number;         // g/cm³ — standard atmospheric density
   dragCoefficient: number;    // Cd — tune for pace
   magnusCoefficient: number;  // Cl — tune for spin curve effect
   gravity: number;            // cm/s²
@@ -52,6 +53,7 @@ export interface PhysicsConfig {
 
   // --- Simulation ---
   timestep: number;           // integration timestep in seconds
+  maxFlightTime: number;      // seconds — safety cap on trajectory simulation
   netContactMargin: number;   // cm margin for net clip detection
   edgeContactMargin: number;  // cm margin for edge contact detection
 
@@ -122,6 +124,7 @@ export const DEFAULT_PHYSICS_CONFIG: PhysicsConfig = {
   // Ball properties
   ballMass: 2.7,
   ballDiameter: 4.0,
+  airDensity: 0.001225,
   dragCoefficient: 0.4,
   magnusCoefficient: 0.6,
   gravity: 981,
@@ -144,6 +147,7 @@ export const DEFAULT_PHYSICS_CONFIG: PhysicsConfig = {
 
   // Simulation
   timestep: 0.002,
+  maxFlightTime: 3.0,
   netContactMargin: 1.0,
   edgeContactMargin: 1.0,
 

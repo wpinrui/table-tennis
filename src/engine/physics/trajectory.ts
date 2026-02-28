@@ -50,11 +50,10 @@ export function simulateFlight(
   const halfWidth = config.tableWidth / 2;  // ±76.25 cm in X
 
   // Air drag precomputed factor: ½ρCdA
-  const AIR_DENSITY = 0.001225; // g/cm³ at standard conditions
   const ballRadius = config.ballDiameter / 2;
   const ballArea = Math.PI * ballRadius * ballRadius;
-  const dragFactor = 0.5 * AIR_DENSITY * config.dragCoefficient * ballArea;
-  const magnusFactor = config.magnusCoefficient * AIR_DENSITY * ballArea;
+  const dragFactor = 0.5 * config.airDensity * config.dragCoefficient * ballArea;
+  const magnusFactor = config.magnusCoefficient * config.airDensity * ballArea;
 
   let pos = { ...startPos };
   let vel = { ...velocity };
@@ -68,8 +67,7 @@ export function simulateFlight(
   // Track which side of net the ball started on
   const startSide = Math.sign(startPos.y) || 1; // +1 or -1
 
-  const MAX_TIME = 3.0; // Safety: 3 seconds max flight
-  const MAX_STEPS = Math.ceil(MAX_TIME / dt);
+  const MAX_STEPS = Math.ceil(config.maxFlightTime / dt);
 
   for (let step = 0; step < MAX_STEPS; step++) {
     time += dt;
