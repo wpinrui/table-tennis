@@ -82,8 +82,8 @@ export interface PhysicsConfig {
   netClipRetentionX: number;
   /** Y velocity retention after clipping the net (0-1). */
   netClipRetentionY: number;
-  /** Minimum Z velocity retention when clipping net while descending (0-1). */
-  netClipMinRetentionZ: number;
+  /** Z velocity retention when clipping the net (0-1). */
+  netClipRetentionZ: number;
 
   // --- Edge contact deflection ---
   /** Stddev of random X velocity change on edge contact (cm/s). */
@@ -168,7 +168,7 @@ export const DEFAULT_PHYSICS_CONFIG: PhysicsConfig = {
   // Net clip deflection
   netClipRetentionX: 0.7,
   netClipRetentionY: 0.5,
-  netClipMinRetentionZ: 0.3,
+  netClipRetentionZ: 0.3,
 
   // Edge contact deflection
   edgeDeflectionStddevX: 30,
