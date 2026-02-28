@@ -112,7 +112,7 @@ export class DefaultPhysicsEngine implements PhysicsEngine {
     arrival: ArrivalState,
   ): BallFlight {
     const sideCaps = capabilities[intention.side];
-    const rubber = intention.side === "forehand" ? equipment.forehandRubber : equipment.backhandRubber;
+    const rubber = this.getRubber(equipment, intention.side);
 
     // Convert intention fractions to absolute physical values
     const effectiveSpeed = this.effectiveSpeedCeiling(sideCaps.powerCeiling, equipment.blade.speed, rubber);
@@ -188,7 +188,7 @@ export class DefaultPhysicsEngine implements PhysicsEngine {
     serviceSkill: number,
   ): BallFlight {
     const sideCaps = capabilities[intention.side];
-    const rubber = intention.side === "forehand" ? equipment.forehandRubber : equipment.backhandRubber;
+    const rubber = this.getRubber(equipment, intention.side);
 
     // Convert intention to physical values
     const effectiveSpeed = this.effectiveSpeedCeiling(sideCaps.powerCeiling, equipment.blade.speed, rubber);
@@ -291,6 +291,11 @@ export class DefaultPhysicsEngine implements PhysicsEngine {
   // Private helpers
   // ---------------------------------------------------------------------------
 
+  /** Get the rubber for the given paddle side. */
+  private getRubber(equipment: Equipment, side: StrokeSide): Rubber {
+    return side === "forehand" ? equipment.forehandRubber : equipment.backhandRubber;
+  }
+
   /**
    * Compute effective speed ceiling after equipment modifiers.
    * Player ceiling × blade speed × rubber speed × rubber type modifier.
@@ -360,8 +365,6 @@ export class DefaultPhysicsEngine implements PhysicsEngine {
     const dirX = dx / horizontalDist;
     const dirY = dy / horizontalDist;
 
-    // Constraint 2: clear net at height targetNetHeight when crossing Y=0
-    // Only applies when the ball actually crosses the net (start and target on opposite sides)
     let vz = vzLand;
     const ballCrossesNet = start.y * target.y < 0;
     if (ballCrossesNet) {

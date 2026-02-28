@@ -92,8 +92,11 @@ export function applyError(
   const accuracyFactor = 1 - accuracy / 100;
 
   // Angular deviation on velocity direction (radians)
-  const angleError = rng.gaussian(0, config.baseErrorStddev * errorScale);
-  const elevationError = rng.gaussian(0, config.baseErrorStddev * errorScale * 0.5);
+  // Accuracy affects how tightly the player can place the ball — worse accuracy
+  // widens the angular error even at high execution quality.
+  const angularErrorScale = config.baseErrorStddev * errorScale * (0.3 + 0.7 * accuracyFactor);
+  const angleError = rng.gaussian(0, angularErrorScale);
+  const elevationError = rng.gaussian(0, angularErrorScale * 0.5);
 
   // Rotate velocity by angular error (simplified: apply to x/y components)
   const cosA = Math.cos(angleError);

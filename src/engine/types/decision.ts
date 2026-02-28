@@ -1,4 +1,4 @@
-import type { Vec2, Vec3 } from "./results.js";
+import type { Vec2, Vec3, PointOutcomeReason } from "./results.js";
 import type { Player, StrokeSide, StrokeCapabilities, Equipment } from "./player.js";
 
 // ---------------------------------------------------------------------------
@@ -179,16 +179,6 @@ export type ServeRuling =
 export type ShotRuling =
   | { result: "continue" }
   | { result: "point"; winner: string; reason: PointOutcomeReason };
-
-/**
- * How a point ended. Kept minimal — covers all cases without
- * over-categorizing physics events.
- */
-export type PointOutcomeReason =
-  | "unreturnable"
-  | "unforcedError"
-  | "offTable"
-  | "intoNet";
 
 // ---------------------------------------------------------------------------
 // Match state — shared context from umpire + match engine

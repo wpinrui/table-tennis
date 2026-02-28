@@ -63,7 +63,6 @@ export function simulateFlight(
   let netContact = false;
   let edgeContact = false;
   let crossedNet = false;
-  let landsOnTable = false;
   let time = 0;
 
   // Track which side of net the ball started on
@@ -185,7 +184,6 @@ export function simulateFlight(
           spn = bounced.spin;
         }
 
-        landsOnTable = true;
         return {
           apex,
           landingPosition: landPos,
